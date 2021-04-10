@@ -1,14 +1,12 @@
-.PHONY: docker-builder vic-hack
+HOME := .
+include Config.mk
 
-docker-builder:
-	docker build -t armbuilder docker-builder/.
+all: clean
+	@echo "  Building ..."
+	@mkdir -p $(OBJ_DIR) && cd $(OBJ_DIR) && mkdir -p $(DIRS)
+	@$(MAKE) -s -C $(SRC_DIR)
+	@rm -vrf $(OBJ_DIR) > /dev/null
 
-all: vic-hack
-
-vic-hack:
-	docker container run  \
-	-v "$(PWD)":/cpp/src/vector-hack \
-	-w /cpp/src/vector-hack \
-	--user $(UID):$(GID) \
-	armbuilder \
-	arm-linux-gnueabi-gcc src/main.cpp -o build/vic-hack -static
+clean:
+	@echo "  Cleaning up ..."
+	@rm -vrf $(BUILD_DIR) > /dev/null

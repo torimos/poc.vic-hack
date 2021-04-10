@@ -1,7 +1,3 @@
 {
-    "files.associations": {
-        "ostream": "cpp",
-        "ios": "cpp",
-        "xiosbase": "cpp"
-    }
+    "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -1,0 +1,39 @@
+#ifndef __UTILS_H
+#define __UTILS_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/types.h>
+#include <linux/spi/spidev.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct GPIO
+{
+    int vd;
+    int pin;
+    bool is_x;
+};
+
+void delay(uint ms);
+void gpioInit(GPIO* gpio, int pin, int mode, int state, bool is_x = false);
+void gpioDirection(GPIO* gpio, int mode);
+void gpioSet(GPIO* gpio, int state);
+void gpioClose(GPIO* gpio);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //__UTILS_H
