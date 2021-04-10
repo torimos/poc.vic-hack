@@ -45,6 +45,7 @@
 
 #define TFT_CMD_GAMMASET	0x26
 
+#define TFT_CMD_RAMCTRL		0xB0
 #define TFT_CMD_FRMCTR1		0xB1
 #define TFT_CMD_FRMCTR2		0xB2
 #define TFT_CMD_FRMCTR3		0xB3
@@ -86,7 +87,7 @@
 #define MADCTL_MH  0x04
 
 #define TFT_CASET		0x2A
-#define TFT_PASET		0x2B
+#define TFT_RASET		0x2B
 #define TFT_RAMWR		0x2C
 #define TFT_RAMRD		0x2E
 #define TFT_CMD_PIXFMT	0x3A
@@ -109,14 +110,14 @@
 #define TFT_RGB_BGR 0x00
 
 static const unsigned char ST7789V_init[] = {
-19,
+18,
 //   22,                   					        // X commands in list
 //    TFT_CMD_SWRESET, TFT_CMD_DELAY, 200,      	//  1: Software reset, no args, w/200 ms delay   
     TFT_CASET, 4, 0, 0x1C, 0, 0xD3,
-    TFT_PASET, 4, 0, 0, 0, 0x5F,
+    TFT_RASET, 4, 0, 0, 0, 0x5F,
     TFT_MADCTL, 1, 0,
     TFT_CMD_PIXFMT, 1, DISP_COLOR_BITS_16,            // *** INTERFACE PIXEL FORMAT: 0x66 -> 18 bit; 0x55 -> 16 bit
-    0xB0, 2, 0, 0x8,
+    //TFT_CMD_RAMCTRL, 2, 0, 8,
     TFT_CMD_FRMCTR2, 5, 0xC, 0xC, 0, 0x33, 0x33,
     TFT_ENTRYM, 1, 0x72,
     ST_CMD_VCOMS, 1, 0x3B,
@@ -161,7 +162,7 @@ void gpioSet(GPIO* gpio, int state)
     if ( gpio->pin >= 0 && gpio->vd )
     {
         write(gpio->vd, (state == 1) ? "1":"0", 1u);
-        printf("Set pin %d state to %d\n", gpio->pin, state);
+        // printf("Set pin %d state to %d\n", gpio->pin, state);
     }
     else 
     {
@@ -209,7 +210,7 @@ void gpioInit(GPIO* gpio, int pin, int mode, int state)
         if ( gpio->vd )
         {
             gpio->pin = pin;
-            printf("Set pin %d mode to %d\n", gpio->pin, mode);
+            // printf("Set pin %d mode to %d\n", gpio->pin, mode);
             if (mode == 1) {
                 gpioSet(gpio, state);
             }
@@ -232,24 +233,6 @@ void delay(uint ms)
     usleep(ms * 1000);
 }
 
-int lcd_data(int spi, unsigned char* txbuf, int txlen)
-{
-    struct spi_ioc_transfer xfer[1];
-    memset(xfer, 0, sizeof xfer);
-    xfer[0].tx_buf = (unsigned long)txbuf;
-    xfer[0].len = txlen;
-    return ioctl(spi, SPI_IOC_MESSAGE(1), xfer);
-}
-
-int64_t lcd_cmd(int spi, unsigned char cmd, unsigned char* txbuf, int txlen)
-{
-    unsigned char cmdBuf[32];
-    memset(cmdBuf, 0, 32);
-    cmdBuf[0] = cmd;
-    memcpy((void*)(cmdBuf+1), txbuf, txlen);
-    return lcd_data(spi, cmdBuf, 1+txlen);
-}
-
 int32_t lcd_read_reg(int fd, unsigned char reg)
 {
     int32_t rez = 0;
@@ -263,46 +246,51 @@ int32_t lcd_read_reg(int fd, unsigned char reg)
     return rez;
 }
 
-int commandList(int spi, const unsigned char *addr) {
-  unsigned char  numCommands, numArgs, cmd;
-  ushort ms;
-  int status = 0;
-  numCommands = *addr++;				// Number of commands to follow
-  gpioSet(&dcPin, 0);
-  while(numCommands--) {				// For each command...
-    cmd = *addr++;						// save command
-    numArgs  = *addr++;					// Number of args to follow
-    ms       = numArgs & TFT_CMD_DELAY;	// If high bit set, delay follows args
-    numArgs &= ~TFT_CMD_DELAY;			// Mask out delay bit
-    status = lcd_cmd(spi, cmd, (unsigned char*)addr, numArgs);
-	addr += numArgs;
-    if(ms) {
-      ms = *addr++;              // Read post-command delay time (ms)
-      if(ms == 255) ms = 500;    // If 255, delay for 500 ms
-	  delay(ms);
+int lcd_data(int spi, int is_cmd, char* txbuf, int len)
+{
+    struct spi_ioc_transfer xfer[1];
+    memset(xfer, 0, sizeof xfer);
+    xfer[0].tx_buf = (unsigned long)txbuf;
+    xfer[0].len = len;
+    gpioSet(&dcPin, is_cmd == 0);
+    if (is_cmd)
+    {
+        printf("LCD Command. Size:%d. ", len);
+        int i;
+        for(i=0;i<len;i++)
+            printf("%02x ", txbuf[i]);
+        printf("\n");
     }
-  }
-  return status;
+    else {
+        printf("LCD Data. Size:%d\n", is_cmd, len);
+    }
+    return ioctl(spi, SPI_IOC_MESSAGE(1), xfer);
 }
 
-
-
-ssize_t lcd_spi_write(int spi, int is_cmd, int len, char *buf)
-{
-    ssize_t result = 0;
-    int sz;
-    gpioSet(&dcPin, is_cmd == 0);
-    while ( len > 0 )
-    {
-        if ( len >= 4096 )
-            sz = 4096;
-        else
-            sz = len;
-        len -= sz;
-        result += write(spi, buf, sz);
-        buf += sz;
+int commandList(int spi, const unsigned char *addr) {
+    unsigned char cmdBuf[32];
+    unsigned char  numCommands, numArgs, cmd;
+    ushort ms;
+    int status = 0;
+    numCommands = *addr++;				// Number of commands to follow
+    while(numCommands--) {				// For each command...
+        cmd = *addr++;						// save command
+        numArgs  = *addr++;					// Number of args to follow
+        ms       = numArgs & TFT_CMD_DELAY;	// If high bit set, delay follows args
+        numArgs &= ~TFT_CMD_DELAY;			// Mask out delay bit
+        memset(cmdBuf, 0, 32);
+        cmdBuf[0] = cmd;
+        if (numArgs > 0)
+            memcpy((void*)(cmdBuf+1), addr, numArgs);
+        status = lcd_data(spi, 1, (char*)cmdBuf, numArgs+1);
+        addr += numArgs;
+        if(ms) {
+            ms = *addr++;              // Read post-command delay time (ms)
+            if(ms == 255) ms = 500;    // If 255, delay for 500 ms
+            delay(ms);
+        }
     }
-    return result;
+  return status;
 }
 
 void lcd_backlight(int level)
@@ -357,7 +345,7 @@ int main(int argc, char **argv)
     // delay(120);
 
     int status = commandList(spi, ST7789V_init);
-    printf("LCD Initialized");
+    printf("LCD Initialized\n");
 
     uint16_t colors1[3] = {0xF800, 0x7E0, 0x1F};
     uint16_t colors2[3] = {0x1F, 0xF800, 0x7E0};
@@ -368,10 +356,9 @@ int main(int argc, char **argv)
         for(i=0;i<BUF_SZ;i++)
             buff[i] = i<BUF_SZ/2 ? colors1[c] : colors2[c];
         uint8_t cmd = TFT_RAMWR;
-        lcd_spi_write(spi, 1, 1, (char*)&cmd);
-        int r = lcd_spi_write(spi, 0, BUF_SZ*2, (char *)buff);
+        lcd_data(spi, 1, (char*)&cmd, 1);
+        int r = lcd_data(spi, 0, (char *)buff, BUF_SZ*2);
         delay(1000);
-        printf("LCD Data. Written: %d\n", r);
     }
     return 0;
 }
