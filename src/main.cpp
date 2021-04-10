@@ -109,30 +109,30 @@
 #define TFT_RGB_BGR 0x00
 
 static const unsigned char ST7789V_init[] = {
-4,
+19,
 //   22,                   					        // X commands in list
-//   TFT_CMD_SWRESET, TFT_CMD_DELAY, 200,      	//  1: Software reset, no args, w/200 ms delay   
-//   TFT_CASET, 4, 0, 0x1C, 0, 0xD3,
-//   TFT_PASET, 4, 0, 0, 0, 0x5F,
-//   TFT_MADCTL, 1, 0,
-//   TFT_CMD_PIXFMT, 1, DISP_COLOR_BITS_16,            // *** INTERFACE PIXEL FORMAT: 0x66 -> 18 bit; 0x55 -> 16 bit
-//   0xB0, 2, 0, 0x8,
-//   TFT_CMD_FRMCTR2, 5, 0xC, 0xC, 0, 0x33, 0x33,
-//   TFT_ENTRYM, 1, 0x72,
-//   ST_CMD_VCOMS, 1, 0x3B,
-//   TFT_CMD_PWCTR1, 1, 0x2C,
-//   TFT_CMD_PWCTR3, 1, 0x1,
-//   TFT_CMD_PWCTR4, 1, 0x14,
-//   TFT_CMD_PWCTR5, 1, 0x20,
-//   ST_CMD_FRCTRL2, 1, 0xF,
-//   ST_CMD_PWCTR1, 2, 0xA4, 0xA1,
-//   TFT_CMD_GMCTRP1, 14, 0xD0,0x10,0x16,0xA,0xA,0x26,0x3C,0x53,0x53,0x18,0x15,0x12,0x36,0x3C,
-//   TFT_CMD_GMCTRN1, 14, 0xD0,0x11,0x19,0xA,0x9,0x25,0x3D,0x35,0x54,0x17,0x15,0x12,0x36,0x3C,
-  //0xE9, 3, 0x5, 0x5, 0x1,
-  TFT_CMD_SLPOUT, TFT_CMD_DELAY, 120,				//  Sleep out,	//  120 ms delay
-  TFT_INVONN, 1, 0,
-  TFT_CMD_NORON, TFT_CMD_DELAY, 10,
-  TFT_DISPON, TFT_CMD_DELAY, 250
+//    TFT_CMD_SWRESET, TFT_CMD_DELAY, 200,      	//  1: Software reset, no args, w/200 ms delay   
+    TFT_CASET, 4, 0, 0x1C, 0, 0xD3,
+    TFT_PASET, 4, 0, 0, 0, 0x5F,
+    TFT_MADCTL, 1, 0,
+    TFT_CMD_PIXFMT, 1, DISP_COLOR_BITS_16,            // *** INTERFACE PIXEL FORMAT: 0x66 -> 18 bit; 0x55 -> 16 bit
+    0xB0, 2, 0, 0x8,
+    TFT_CMD_FRMCTR2, 5, 0xC, 0xC, 0, 0x33, 0x33,
+    TFT_ENTRYM, 1, 0x72,
+    ST_CMD_VCOMS, 1, 0x3B,
+    TFT_CMD_PWCTR1, 1, 0x2C,
+//    TFT_CMD_PWCTR3, 1, 0x1,
+    TFT_CMD_PWCTR4, 1, 0x14,
+    TFT_CMD_PWCTR5, 1, 0x20,
+    ST_CMD_FRCTRL2, 1, 0xF,
+    ST_CMD_PWCTR1, 2, 0xA4, 0xA1,
+    TFT_CMD_GMCTRP1, 14, 0xD0,0x10,0x16,0xA,0xA,0x26,0x3C,0x53,0x53,0x18,0x15,0x12,0x36,0x3C,
+    TFT_CMD_GMCTRN1, 14, 0xD0,0x11,0x19,0xA,0x9,0x25,0x3D,0x35,0x54,0x17,0x15,0x12,0x36,0x3C,
+//   0xE9, 3, 0x5, 0x5, 0x1,
+    TFT_CMD_SLPOUT, TFT_CMD_DELAY, 120,				//  Sleep out,	//  120 ms delay
+    TFT_INVONN, 1, 0,
+    TFT_CMD_NORON, TFT_CMD_DELAY, 10,
+    TFT_DISPON, TFT_CMD_DELAY, 250
 };
 
 struct GPIO
