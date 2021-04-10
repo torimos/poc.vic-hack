@@ -73,6 +73,7 @@
 #define TFT_CMD_POWER_SEQ	0xED
 #define TFT_CMD_DTCA		0xE8
 #define TFT_CMD_DTCB		0xEA
+#define TFT_CMD_EQCTRL      0xE9
 #define TFT_CMD_PRC			0xF7
 #define TFT_CMD_3GAMMA_EN	0xF2
 
@@ -104,27 +105,26 @@
 #define TFT_CMD_DELAY	0x80
 
 static const unsigned char ST7789V_init[] = {
-4,
-//   22,                   					        // X commands in list
-//    TFT_CMD_SWRESET, TFT_CMD_DELAY, 200,      	//  1: Software reset, no args, w/200 ms delay   
-//     TFT_CASET, 4, 0, 0x1C, 0, 0xD3,
-//     TFT_RASET, 4, 0, 0, 0, 0x5F,
-//     TFT_MADCTL, 1, 0,
-//     TFT_CMD_PIXFMT, 1, DISP_COLOR_BITS_16,            // *** INTERFACE PIXEL FORMAT: 0x66 -> 18 bit; 0x55 -> 16 bit
-//     //TFT_CMD_RAMCTRL, 2, 0, 8,
-//     TFT_CMD_FRMCTR2, 5, 0xC, 0xC, 0, 0x33, 0x33,
-//     TFT_ENTRYM, 1, 0x72,
-//     ST_CMD_VCOMS, 1, 0x3B,
-//     TFT_CMD_PWCTR1, 1, 0x2C,
-// //    TFT_CMD_PWCTR3, 1, 0x1,
-//     TFT_CMD_PWCTR4, 1, 0x14,
-//     TFT_CMD_PWCTR5, 1, 0x20,
-//     ST_CMD_FRCTRL2, 1, 0xF,
-//     ST_CMD_PWCTR1, 2, 0xA4, 0xA1,
-//     TFT_CMD_GMCTRP1, 14, 0xD0,0x10,0x16,0xA,0xA,0x26,0x3C,0x53,0x53,0x18,0x15,0x12,0x36,0x3C,
-//     TFT_CMD_GMCTRN1, 14, 0xD0,0x11,0x19,0xA,0x9,0x25,0x3D,0x35,0x54,0x17,0x15,0x12,0x36,0x3C,
-//   0xE9, 3, 0x5, 0x5, 0x1,
-    TFT_CMD_SLPOUT, TFT_CMD_DELAY, 120,				//  Sleep out,	//  120 ms delay
+    22,
+    TFT_CMD_SWRESET, TFT_CMD_DELAY, 200,
+    TFT_CASET, 4, 0, 0x1C, 0, 0xD3,
+    TFT_RASET, 4, 0, 0, 0, 0x5F,
+    TFT_MADCTL, 1, 0,
+    TFT_CMD_PIXFMT, 1, DISP_COLOR_BITS_16,
+    TFT_CMD_RAMCTRL, 2, 0, 8,
+    TFT_CMD_FRMCTR2, 5, 0xC, 0xC, 0, 0x33, 0x33,
+    TFT_ENTRYM, 1, 0x72,
+    ST_CMD_VCOMS, 1, 0x3B,
+    TFT_CMD_PWCTR1, 1, 0x2C,
+    TFT_CMD_PWCTR3, 1, 0x1,
+    TFT_CMD_PWCTR4, 1, 0x14,
+    TFT_CMD_PWCTR5, 1, 0x20,
+    ST_CMD_FRCTRL2, 1, 0xF,
+    ST_CMD_PWCTR1, 2, 0xA4, 0xA1,
+    TFT_CMD_GMCTRP1, 14, 0xD0,0x10,0x16,0xA,0xA,0x26,0x3C,0x53,0x53,0x18,0x15,0x12,0x36,0x3C,
+    TFT_CMD_GMCTRN1, 14, 0xD0,0x11,0x19,0xA,0x9,0x25,0x3D,0x35,0x54,0x17,0x15,0x12,0x36,0x3C,
+    TFT_CMD_EQCTRL, 3, 0x5, 0x5, 0x1,
+    TFT_CMD_SLPOUT, TFT_CMD_DELAY, 120,
     TFT_INVONN, TFT_CMD_DELAY, 10,
     TFT_CMD_NORON, TFT_CMD_DELAY, 10,
     TFT_DISPON, TFT_CMD_DELAY, 250
@@ -252,22 +252,21 @@ int lcd_data(int spi, int is_cmd, char* txbuf, int len)
     xfer[0].tx_buf = (unsigned long)txbuf;
     xfer[0].len = len;
     gpioSet(&dcPin, is_cmd == 0);
-    if (is_cmd)
-    {
-        printf("LCD Command. Size:%d. ", len);
-        int i;
-        for(i=0;i<len;i++)
-            printf("%02x ", txbuf[i]);
-        printf("\n");
-    }
-    else {
-        printf("LCD Data. Size:%d\n", len);
-    }
+    // if (is_cmd)
+    // {
+    //     printf("LCD Command. Args Len:%d. ", len);
+    //     int i;
+    //     for(i=0;i<len;i++)
+    //         printf("%02x ", txbuf[i]);
+    //     printf("\n");
+    // }
+    // else {
+    //     printf("LCD Data. Size:%d\n", len);
+    // }
     return ioctl(spi, SPI_IOC_MESSAGE(1), xfer);
 }
 
 int commandList(int spi, const unsigned char *addr) {
-    unsigned char cmdBuf[32];
     unsigned char  numCommands, numArgs, cmd;
     ushort ms;
     int status = 0;
@@ -277,11 +276,11 @@ int commandList(int spi, const unsigned char *addr) {
         numArgs  = *addr++;					// Number of args to follow
         ms       = numArgs & TFT_CMD_DELAY;	// If high bit set, delay follows args
         numArgs &= ~TFT_CMD_DELAY;			// Mask out delay bit
-        memset(cmdBuf, 0, 32);
-        cmdBuf[0] = cmd;
+
+        status = lcd_data(spi, 1, (char*)&cmd, 1);
         if (numArgs > 0)
-            memcpy((void*)(cmdBuf+1), addr, numArgs);
-        status = lcd_data(spi, 1, (char*)cmdBuf, numArgs+1);
+            status = lcd_data(spi, 0, (char *)addr, numArgs);
+
         addr += numArgs;
         if(ms) {
             ms = *addr++;              // Read post-command delay time (ms)
