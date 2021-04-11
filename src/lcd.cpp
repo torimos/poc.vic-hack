@@ -23,22 +23,15 @@ int32_t lcd_read_reg(int fd, unsigned char reg)
 
 int lcd_cmd(int spi, uint8_t cmd)
 {
-    struct spi_ioc_transfer xfer[1];
-    memset(xfer, 0, sizeof xfer);
-    xfer[0].tx_buf = (unsigned long)&cmd;
-    xfer[0].len = 1;
     gpioSet(&dcPin, 0);
-    return ioctl(spi, SPI_IOC_MESSAGE(1), xfer);
+    return write(spi, &cmd, 1);
 }
 
 int lcd_data(int spi, char* data, int size)
 {
-    struct spi_ioc_transfer xfer[1];
-    memset(xfer, 0, sizeof xfer);
-    xfer[0].tx_buf = (unsigned long)data;
-    xfer[0].len = size;
+   
     gpioSet(&dcPin, 1);
-    return ioctl(spi, SPI_IOC_MESSAGE(1), xfer);
+    return write(spi, data, size);
 }
 
 int lcd_write_commands(int spi, const unsigned char *addr) 

@@ -13,6 +13,7 @@
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +27,8 @@ struct GPIO
 };
 
 void delay(uint ms);
+int64_t get_time();
+
 void gpioInit(GPIO* gpio, int pin, int mode, int state, bool is_x = false);
 void gpioDirection(GPIO* gpio, int mode);
 void gpioSet(GPIO* gpio, int state);
