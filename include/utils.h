@@ -23,7 +23,7 @@ struct GPIO
 {
     int vd;
     int pin;
-    bool is_x;
+    bool open_drain;
 };
 
 void delay(uint ms);

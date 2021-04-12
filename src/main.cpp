@@ -1,10 +1,11 @@
 #include "utils.h"
 #include "lcd.h"
+#include "imu.h"
 
 extern void lcd_demo();
+extern void imu_demo();
 
 int main(int argc, char **argv)
 {
-    //lcd_demo();
-    return 0;
+	return 0;
 }

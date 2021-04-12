@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void gpioInit(GPIO* gpio, int pin, int mode, int state, bool is_x)
+void gpioInit(GPIO* gpio, int pin, int mode, int state, bool open_drain)
 {
     char tmp[64];
     gpio->pin = -1;
@@ -18,7 +18,7 @@ void gpioInit(GPIO* gpio, int pin, int mode, int state, bool is_x)
         if ( gpio->vd )
         {
             gpio->pin = pin;
-            gpio->is_x = is_x;
+            gpio->open_drain = open_drain;
             // printf("Set pin %d mode to %d\n", gpio->pin, mode);
             gpioSet(gpio, state);
         }
@@ -60,7 +60,7 @@ void gpioSet(GPIO* gpio, int state)
 {
     if ( gpio->pin >= 0 && gpio->vd )
     {
-        if (gpio->is_x) {
+        if (gpio->open_drain) {
             gpioDirection(gpio, (state == 0));
         }
         else {

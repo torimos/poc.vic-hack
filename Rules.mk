@@ -12,4 +12,4 @@ include $(HOME)/Config.mk
 
 $(TARGET): $(OBJS)
 	@echo "  LD $(TARGET)"
-	@$(CC) -o $(BUILD_DIR)/$(TARGET) $(patsubst %.o,$(OBJ_DIR)/%.o,$(OBJS))
+	@$(CC) -o $(BUILD_DIR)/$(TARGET) $(patsubst %.o,$(OBJ_DIR)/%.o,$(OBJS)) $(LDFLAGS)
