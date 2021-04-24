@@ -34,7 +34,7 @@
 // #include <media/msmb_camera.h>
 #include "videodev2.h"
 
-#define CAM_MAX_NUM_BUFS_PER_STREAM 64
+#define CAM_MAX_NUM_BUFS_PER_STREAM 8
 #define MAX_METADATA_PRIVATE_PAYLOAD_SIZE_IN_BYTES 8096
 #define AWB_DEBUG_DATA_SIZE               (7029)
 #define AEC_DEBUG_DATA_SIZE               (1720)
@@ -751,12 +751,12 @@ typedef struct {
     cam_capture_settings_t configs[MAX_CAPTURE_BATCH_NUM];
 } cam_capture_frame_config_t;
 typedef struct {
-    uint8_t chromatixData[CHROMATIX_SIZE];
-    uint8_t snapchromatixData[CHROMATIX_SIZE];
-    uint8_t common_chromatixData[COMMONCHROMATIX_SIZE];
-    uint8_t cpp_chromatixData[CPPCHROMATIX_SIZE];
-    uint8_t cpp_chromatixSnapData[CPPCHROMATIX_SIZE];
-    uint8_t postproc_chromatixData[SWPOSTPROCCHROMATIX_SIZE];
+    uint8_t chromatixData[CHROMATIX_SIZE/3];
+    uint8_t snapchromatixData[CHROMATIX_SIZE/3];
+    uint8_t common_chromatixData[COMMONCHROMATIX_SIZE/3];
+    uint8_t cpp_chromatixData[CPPCHROMATIX_SIZE/3];
+    uint8_t cpp_chromatixSnapData[CPPCHROMATIX_SIZE/3];
+    uint8_t postproc_chromatixData[SWPOSTPROCCHROMATIX_SIZE/3];
 } tune_chromatix_t;
 typedef struct {
     uint8_t af_tuneData[AFTUNE_SIZE];

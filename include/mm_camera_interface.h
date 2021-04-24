@@ -31,6 +31,11 @@
 #include <videodev2.h>
 #include "cam_intf.h"
 #include "cam_types.h"
+#include "cam_list.h"
+#include "cam_queue.h"
+#include "mm_jpeg_interface.h"
+
+typedef int ion_user_handle_t;
 
 #define MM_CAMERA_MAX_NUM_SENSORS MSM_MAX_CAMERA_SENSORS
 #define MM_CAMERA_MAX_NUM_FRAMES CAM_MAX_NUM_BUFS_PER_STREAM

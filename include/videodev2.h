@@ -10,7 +10,7 @@
 #define MSM_CAMERA_MAX_USER_BUFF_CNT 16
 #define MSM_CAMERA_PRIV_CMD_MAX  20
 
-#define VIDEO_MAX_PLANES               8
+#define VIDEO_MAX_PLANES               4
 
 #define V4L2_CID_PRIVATE_BASE		0x08000000
 
