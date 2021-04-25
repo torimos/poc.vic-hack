@@ -12,8 +12,6 @@ static pthread_mutex_t app_mutex;
 static int thread_status = 0;
 static pthread_cond_t app_cond_v;
 
-typedef void (*mm_camera_buf_notify_t) (void *bufs, void *user_data);//mm_camera_super_buf_t
-
 int (*mm_camera_lib_open) (mm_camera_lib_handle *handle, int cam_id);
 // int (*mm_app_stop_preview) (mm_camera_test_obj_t *test_obj);
 // int (*mm_app_start_capture_raw) (mm_camera_test_obj_t *test_obj, uint8_t num_snapshots);
@@ -22,7 +20,7 @@ int (*mm_app_start_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t
 int (*mm_app_stop_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
 mm_camera_channel_t* (*mm_app_add_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_type_t ch_type, mm_camera_channel_attr_t *attr, mm_camera_buf_notify_t channel_cb, void *userdata);
 int (*mm_app_del_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
-// mm_camera_stream_t* (*mm_app_add_stream) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
+mm_camera_stream_t* (*mm_app_add_stream) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
 int (*mm_app_del_stream) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel, mm_camera_stream_t *stream);
 // int (*mm_app_stream_initbuf) (cam_frame_len_offset_t *frame_offset_info,
 //                           uint8_t *num_bufs,
@@ -33,10 +31,10 @@ int (*mm_app_del_stream) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *c
 // int32_t (*mm_app_stream_deinitbuf) (mm_camera_map_unmap_ops_tbl_t *ops_tbl, void *user_data);
 // int32_t (*mm_app_stream_clean_invalidate_buf) (uint32_t index, void *user_data);
 // int32_t (*mm_app_stream_invalidate_buf) (uint32_t index, void *user_data);
-// int (*mm_app_config_stream)(mm_camera_test_obj_t *test_obj,
-//                          mm_camera_channel_t *channel,
-//                          mm_camera_stream_t *stream,
-//                          mm_camera_stream_config_t *config);
+int (*mm_app_config_stream)(mm_camera_test_obj_t *test_obj,
+                         mm_camera_channel_t *channel,
+                         mm_camera_stream_t *stream,
+                         mm_camera_stream_config_t *config);
 mm_camera_channel_t* (*mm_app_get_channel_by_type) (mm_camera_test_obj_t *test_obj,
                                                  mm_camera_channel_type_t ch_type);
 // int (*mm_app_alloc_bufs) (mm_camera_app_buf_t* app_bufs,
@@ -72,14 +70,14 @@ int lib_init(mm_camera_lib_handle* lib_handle)
     *(void **)&(mm_app_stop_channel) = dlsym(ptr, "mm_app_stop_channel");
     *(void **)&(mm_app_add_channel) = dlsym(ptr, "mm_app_add_channel");
     *(void **)&(mm_app_del_channel) = dlsym(ptr, "mm_app_del_channel");
-    // *(void **)&(mm_app_add_stream) = dlsym(ptr, "mm_app_add_stream");
+    *(void **)&(mm_app_add_stream) = dlsym(ptr, "mm_app_add_stream");
     *(void **)&(mm_app_del_stream) = dlsym(ptr, "mm_app_del_stream");
     // *(void **)&(mm_app_stream_initbuf) = dlsym(ptr, "mm_app_stream_initbuf");
     // *(void **)&(mm_app_stream_deinitbuf) = dlsym(ptr, "mm_app_stream_deinitbuf");
     // *(void **)&(mm_app_stream_clean_invalidate_buf) = dlsym(ptr, "mm_app_stream_clean_invalidate_buf");
     // *(void **)&(mm_app_stream_invalidate_buf) = dlsym(ptr, "mm_app_stream_invalidate_buf");
     *(void **)&(mm_app_get_channel_by_type) = dlsym(ptr, "mm_app_get_channel_by_type");
-    // *(void **)&(mm_app_config_stream) = dlsym(ptr, "mm_app_config_stream");
+    *(void **)&(mm_app_config_stream) = dlsym(ptr, "mm_app_config_stream");
     // *(void **)&(mm_app_alloc_bufs) = dlsym(ptr, "mm_app_alloc_bufs");
     *(void **)&(mm_app_add_snapshot_stream) = dlsym(ptr, "mm_app_add_snapshot_stream");
     *(void **)&(mm_app_add_raw_stream) = dlsym(ptr, "mm_app_add_raw_stream");
@@ -130,39 +128,6 @@ void mm_camera_app_done()
   pthread_mutex_unlock(&app_mutex);
 }
 
-int mm_app_stop_capture_raw(mm_camera_test_obj_t *test_obj)
-{
-    int rc = MM_CAMERA_OK;
-    mm_camera_channel_t *ch = NULL;
-    int i;
-
-    ch = mm_app_get_channel_by_type(test_obj, MM_CHANNEL_TYPE_CAPTURE);
-
-    rc = mm_app_stop_channel(test_obj, ch);
-    if (MM_CAMERA_OK != rc) {
-        printf("%s: ERROR. stop recording failed rc=%d\n", __func__, rc);
-    }
-
-    for ( i = 0 ; i < ch->num_streams ; i++ ) {
-       mm_app_del_stream(test_obj, ch, &ch->streams[i]);
-    }
-
-    mm_app_del_channel(test_obj, ch);
-
-    return rc;
-}
-
-int mm_app_stop_preview(mm_camera_test_obj_t *test_obj)
-{
-    mm_camera_channel_t* channel = mm_app_get_channel_by_type(test_obj, MM_CHANNEL_TYPE_PREVIEW);
-    int rc = mm_app_stop_and_del_channel(test_obj, channel);
-    if ( rc ) {
-            printf("%s: ERROR. Stop Preview failed rc=%d\n", __func__, rc);
-    }
-    return rc;
-}
-
-
 // void mm_app_dump_frame(mm_camera_buf_def_t *frame,
 //                        const char *name,
 //                        const char *ext,
@@ -194,67 +159,14 @@ int mm_app_stop_preview(mm_camera_test_obj_t *test_obj)
 //     }
 // }
 
-static void mm_app_snapshot_notify_cb_raw(void *bufs, void *user_data)//mm_camera_super_buf_t
+static void mm_anki_app_rdi_notify_cb(void *bufs, void *user_data)//mm_camera_super_buf_t
 {
 
     int rc;
     uint32_t i = 0;
     mm_camera_test_obj_t *pme = (mm_camera_test_obj_t *)user_data;
-    // mm_camera_channel_t *channel = 0;
-    // mm_camera_stream_t *m_stream = 0;
-    // mm_camera_buf_def_t *m_frame = 0;
 
     printf("%s: BEGIN\n", __func__);
-
-//     /* find channel */
-//     for (i = 0; i < MM_CHANNEL_TYPE_MAX; i++) {
-//         if (pme->channels[i].ch_id == bufs->ch_id) {
-//             channel = &pme->channels[i];
-//             break;
-//         }
-//     }
-//     if (NULL == channel) {
-//         printf("%s: ERROR. Wrong channel id (%d)", __func__, bufs->ch_id);
-//         rc = -1;
-//         goto EXIT;
-//     }
-
-//     /* find snapshot stream */
-//     for (i = 0; i < channel->num_streams; i++) {
-//         if (channel->streams[i].s_config.stream_info->stream_type == CAM_STREAM_TYPE_RAW) {
-//             m_stream = &channel->streams[i];
-//             break;
-//         }
-//     }
-//     if (NULL == m_stream) {
-//         printf("%s: ERROR. cannot find snapshot stream", __func__);
-//         rc = -1;
-//         goto EXIT;
-//     }
-
-//     /* find snapshot frame */
-//     for (i = 0; i < bufs->num_bufs; i++) {
-//         if (bufs->bufs[i]->stream_id == m_stream->s_id) {
-//             m_frame = bufs->bufs[i];
-//             break;
-//         }
-//     }
-//     if (NULL == m_frame) {
-//         printf("%s: ERROR. main frame is NULL", __func__);
-//         rc = -1;
-//         goto EXIT;
-//     }
-
-//     mm_app_dump_frame(m_frame, "main", "raw", m_frame->frame_idx);
-
-// EXIT:
-//     for (i=0; i<bufs->num_bufs; i++) {
-//         if (MM_CAMERA_OK != pme->cam->ops->qbuf(bufs->camera_handle,
-//                                                 bufs->ch_id,
-//                                                 bufs->bufs[i])) {
-//             printf("%s: ERROR. Failed in Qbuf\n", __func__);
-//         }
-//     }
 
     mm_camera_app_done();
 
@@ -262,69 +174,8 @@ static void mm_app_snapshot_notify_cb_raw(void *bufs, void *user_data)//mm_camer
 }
 
 
-int mm_app_start_capture_raw(mm_camera_test_obj_t *test_obj, uint8_t num_snapshots)
-{
-    int32_t rc = MM_CAMERA_OK;
-    mm_camera_channel_t *channel = 0;
-    mm_camera_stream_t *s_main = 0;
-    mm_camera_channel_attr_t attr;
-
-    memset(&attr, 0, sizeof(mm_camera_channel_attr_t));
-    attr.notify_mode = MM_CAMERA_SUPER_BUF_NOTIFY_BURST;
-    attr.max_unmatched_frames = 3;
-    channel = mm_app_add_channel(test_obj,
-                                 MM_CHANNEL_TYPE_CAPTURE,
-                                 &attr,
-                                 mm_app_snapshot_notify_cb_raw,
-                                 test_obj);
-    if (0 == channel) {
-        printf("%s: ERROR. add channel failed", __func__);
-        return -MM_CAMERA_E_GENERAL;
-    }
-    
-    printf("%s: mm_app_add_channel done!\n", __func__);
-    // test_obj->buffer_format = CAM_FORMAT_BAYER_QCOM_RAW_12BPP_GBRG;
-    // s_main = mm_app_add_raw_stream(test_obj,
-    //                                channel,
-    //                                mm_app_snapshot_notify_cb_raw,
-    //                                test_obj,
-    //                                num_snapshots,
-    //                                num_snapshots);
-    s_main = mm_app_add_snapshot_stream(test_obj, 
-                                        channel, 
-                                        mm_app_snapshot_notify_cb_raw, 
-                                        test_obj, 
-                                        5, 
-                                        1);
-
-    if (0 == s_main) {
-        printf("%s: ERROR. add main snapshot stream failed\n", __func__);
-        mm_app_del_channel(test_obj, channel);
-        rc = MM_CAMERA_E_GENERAL;
-        return rc;
-    }
-
-    printf("%s: mm_app_add_raw_stream done!\n", __func__);
-
-    rc = mm_app_start_channel(test_obj, channel);
-    if (MM_CAMERA_OK != rc) {
-        printf("%s: ERROR. start zsl failed rc=%d\n", __func__, rc);
-        mm_app_del_stream(test_obj, channel, s_main);
-        mm_app_del_channel(test_obj, channel);
-        return rc;
-    }
-    
-    printf("%s: mm_app_start_channel done!\n", __func__);
-
-    return rc;
-}
-
-
 void validate(mm_camera_lib_handle* h)
 {
-    printf("%s: mm_camera_lib_handle sz: %d == 480320\n", __func__, sizeof(mm_camera_lib_handle));
-    printf("%s: mm_camera_test_obj_t sz: %d == 480256\n", __func__, sizeof(mm_camera_test_obj_t));
-
     printf("%s: stream_width: %d\n", __func__, h->current_params.stream_width);
     printf("%s: stream_height: %d\n", __func__, h->current_params.stream_height);
     printf("%s: af_mode: %d\n", __func__, h->current_params.af_mode);
@@ -349,9 +200,81 @@ void validate(mm_camera_lib_handle* h)
     printf("%s: params_buffer: %x\n", __func__, h->test_obj.params_buffer);
     
     printf("%s: test_obj.jpeg_hdl: %x\n", __func__, h->test_obj.jpeg_hdl);
+        
     //mem_dump("xxx", &h->test_obj, 256);
 }
 
+mm_camera_stream_t * mm_my_app_add_rdi_stream(mm_camera_test_obj_t *test_obj,
+                                               mm_camera_channel_t *channel,
+                                               mm_camera_buf_notify_t stream_cb,
+                                               void *userdata,
+                                               uint8_t num_bufs,
+                                               uint8_t num_burst)
+{
+    mm_camera_stream_t *stream = NULL;
+
+    stream = mm_app_add_stream(test_obj, channel);
+    if (NULL == stream) {
+        printf("%s: ERROR. add stream failed\n", __func__);
+        return NULL;
+    }
+
+    // int rc = mm_app_config_stream(test_obj, channel, stream, &stream->s_config);
+    // if (MM_CAMERA_OK != rc) {
+    //     printf("%s: ERROR. config rdi stream err=%d\n", __func__, rc);
+    //     return NULL;
+    // }
+    return NULL;
+}
+
+mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb)
+{
+    mm_camera_channel_t *channel = 0;
+    mm_camera_stream_t *stream = 0;
+
+    channel = mm_app_add_channel(test_obj,
+                                 MM_CHANNEL_TYPE_RDI,
+                                 0,
+                                 0,
+                                 0);
+    if (NULL == channel) {
+        printf("%s: ERROR. add channel failed\n", __func__);
+        return NULL;
+    }
+
+    stream = mm_my_app_add_rdi_stream(test_obj, 
+                                        channel, 
+                                        notify_cb, 
+                                        test_obj, 
+                                        8, 
+                                        num_burst);
+    if (NULL == stream) {
+        printf("%s: ERROR. add stream failed\n", __func__);
+        mm_app_del_channel(test_obj, channel);
+        return NULL;
+    }
+
+    return channel;
+}
+
+int mm_my_app_start_rdi(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb)
+{
+    int rc = MM_CAMERA_OK;
+    mm_camera_channel_t *channel = mm_my_app_add_rdi_channel(test_obj, num_burst, notify_cb);
+    if (NULL == channel) {
+        printf("%s: ERROR. add channel failed\n", __func__);
+        return -MM_CAMERA_E_GENERAL;
+    }
+
+    rc = mm_app_start_channel(test_obj, channel);
+    if (MM_CAMERA_OK != rc) {
+        printf("%s: ERROR. start rdi failed rc=%d\n", __func__, rc);
+        mm_app_del_channel(test_obj, channel);
+        return rc;
+    }
+
+    return rc;
+}
 
 
 int main(int argc, char **argv)
@@ -363,24 +286,40 @@ int main(int argc, char **argv)
     gpioInit(&cenPin, 83, 1, 1); //poweron
     gpioInit(&sbyPin, 94, 1, 0); //unpause
     printf("%s: gpio initialized\n", __func__);
+
+    
+    printf("%s: mm_camera_lib_handle sz: %d == 480320\n", __func__, sizeof(mm_camera_lib_handle));
+    printf("%s: mm_camera_test_obj_t sz: %d == 480256\n", __func__, sizeof(mm_camera_test_obj_t));
+    printf("%s: mm_camera_stream_t sz: %d == 14020\n", __func__, sizeof(mm_camera_stream_t));
+    printf("%s: mm_camera_channel_t sz: %d == 56088\n", __func__, sizeof(mm_camera_channel_t));
+    printf("%s: mm_camera_stream_config_t sz: %d == ???\n", __func__, sizeof(mm_camera_stream_config_t));
+    return -1;
     if (!lib_init(&handle))
     {
         validate(&handle);
+        // int rc = mm_my_app_start_rdi(&handle.test_obj, 0, mm_anki_app_rdi_notify_cb);
+        // if (!rc)
+        // {
+        //     printf("%s: mm_anki_app_start_rdi: ok\n", __func__);
+        //     mm_camera_app_wait();
+        //     printf("%s: mm_camera_app_wait: done\n", __func__);
+        // }
 
-        //if (!mm_app_stop_preview(&handle.test_obj))
-        {
-        //    printf("%s: mm_app_stop_preview: ok\n", __func__);
-            if (!mm_app_start_capture_raw(&handle.test_obj, 5))
-            {
-                printf("%s: mm_app_start_capture_raw: ok\n", __func__);
-                mm_camera_app_wait();
-                printf("%s: mm_camera_app_wait: ok\n", __func__);
-                if (!mm_app_stop_capture_raw(&handle.test_obj))
-                {
-                    printf("%s: mm_app_stop_capture_raw: ok\n", __func__);
-                }
-            }
-        }
+
+        // //if (!mm_app_stop_preview(&handle.test_obj))
+        // {
+        // //    printf("%s: mm_app_stop_preview: ok\n", __func__);
+        //     if (!mm_app_start_capture_raw(&handle.test_obj, 5))
+        //     {
+        //         printf("%s: mm_app_start_capture_raw: ok\n", __func__);
+        //         mm_camera_app_wait();
+        //         printf("%s: mm_camera_app_wait: ok\n", __func__);
+        //         if (!mm_app_stop_capture_raw(&handle.test_obj))
+        //         {
+        //             printf("%s: mm_app_stop_capture_raw: ok\n", __func__);
+        //         }
+        //     }
+        // }
     }
     return 0;
 }

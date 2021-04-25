@@ -16,8 +16,6 @@
 extern "C" {
 #endif
 
-#define MAX_STREAM_NUM_IN_BUNDLE 6
-
 typedef enum {
     MM_CAMERA_OK,
     MM_CAMERA_E_GENERAL,
@@ -43,6 +41,21 @@ typedef enum {
     MM_CHANNEL_TYPE_MAX
 } mm_camera_channel_type_t;
 
+typedef enum {
+    MM_CAMERA_SUPER_BUF_NOTIFY_BURST = 0,
+    MM_CAMERA_SUPER_BUF_NOTIFY_CONTINUOUS,
+    MM_CAMERA_SUPER_BUF_NOTIFY_MAX
+} mm_camera_super_buf_notify_mode_t;
+
+typedef enum {
+    MM_CAMERA_SUPER_BUF_PRIORITY_NORMAL = 0,
+    MM_CAMERA_SUPER_BUF_PRIORITY_FOCUS,
+    MM_CAMERA_SUPER_BUF_PRIORITY_EXPOSURE_BRACKETING,
+    MM_CAMERA_SUPER_BUF_PRIORITY_LOW,/* Bundled metadata frame may not match*/
+    MM_CAMERA_SUPER_BUF_PRIORITY_MAX
+} mm_camera_super_buf_priority_t;
+
+typedef void (*mm_camera_buf_notify_t) (void *bufs, void *user_data); //mm_camera_super_buf_t
 typedef void (*release_data_fn)(void* data, void *user_data);
 
 typedef struct {
@@ -88,14 +101,29 @@ typedef struct {
 } mm_camera_vtbl_t;
 
 typedef struct {
-    // uint32_t s_id;
-    // mm_camera_stream_config_t s_config;
-    // cam_frame_len_offset_t offset;
-    // uint8_t num_of_bufs;
-    // uint32_t multipleOf;
-    // mm_camera_app_buf_t s_bufs[MM_CAMERA_MAX_NUM_FRAMES];
-    // mm_camera_app_buf_t s_info_buf;
-    uint8_t data[10905];
+  void *user_data;
+  int32_t (*get_bufs) (void *offset, //cam_frame_len_offset_t
+                       uint8_t *num_bufs,
+                       uint8_t **initial_reg_flag,
+                       void **bufs, //mm_camera_buf_def_t
+                       void *ops_tbl, //mm_camera_map_unmap_ops_tbl_t
+                       void *user_data);
+  int32_t (*put_bufs) (void *ops_tbl, //mm_camera_map_unmap_ops_tbl_t
+                       void *user_data);
+  int32_t (*invalidate_buf)(uint32_t index, void *user_data);
+  int32_t (*clean_invalidate_buf)(uint32_t index, void *user_data);
+} mm_camera_stream_mem_vtbl_t;
+
+typedef struct {
+    void *stream_info; //cam_stream_info_t
+    cam_padding_info_t padding_info;
+    mm_camera_stream_mem_vtbl_t mem_vtbl;
+    mm_camera_buf_notify_t stream_cb;
+    void *userdata;
+} mm_camera_stream_config_t;
+
+typedef struct {
+    uint8_t data[14020];
 } mm_camera_stream_t;
 
 typedef struct {
@@ -118,8 +146,28 @@ typedef struct {
     size_t                  size;
     void                    *data;//parm_buffer_t
 } mm_camera_app_meminfo_t;
-typedef struct {
+
+typedef struct mm_camera_buf_def {
+    // uint32_t stream_id;
+    // cam_stream_type_t stream_type;
+    // cam_stream_buf_type buf_type;
+    // uint32_t buf_idx;
+    // uint8_t is_uv_subsampled;
+    // struct timespec ts;
+    // uint32_t frame_idx;
+    // union {
+    //     mm_camera_plane_buf_def_t planes_buf;
+    //     mm_camera_user_buf_def_t user_buf;
+    // };
+    // int fd;
+    // void *buffer;
+    // size_t frame_len;
+    // void *mem_info;
     uint8_t buf[528];
+} mm_camera_buf_def_t;
+
+typedef struct {
+    mm_camera_buf_def buf;
     mm_camera_app_meminfo_t mem_info;
 } mm_camera_app_buf_t;
 
@@ -143,7 +191,7 @@ typedef struct {
     
     int fb_fd;
     uint8_t vinfo[160];//struct fb_var_screeninfo 
-    uint8_t data_overlay[1015+4];// struct mdp_overlay
+    uint8_t data_overlay[1015+4*1];// struct mdp_overlay
     uint32_t slice_size;
     
     uint32_t buffer_width, buffer_height;
@@ -190,18 +238,6 @@ typedef struct {
 } mm_camera_lib_handle;
 //480320
 
-typedef enum {
-    MM_CAMERA_SUPER_BUF_NOTIFY_BURST = 0,
-    MM_CAMERA_SUPER_BUF_NOTIFY_CONTINUOUS,
-    MM_CAMERA_SUPER_BUF_NOTIFY_MAX
-} mm_camera_super_buf_notify_mode_t;
-typedef enum {
-    MM_CAMERA_SUPER_BUF_PRIORITY_NORMAL = 0,
-    MM_CAMERA_SUPER_BUF_PRIORITY_FOCUS,
-    MM_CAMERA_SUPER_BUF_PRIORITY_EXPOSURE_BRACKETING,
-    MM_CAMERA_SUPER_BUF_PRIORITY_LOW,/* Bundled metadata frame may not match*/
-    MM_CAMERA_SUPER_BUF_PRIORITY_MAX
-} mm_camera_super_buf_priority_t;
 typedef struct {
     mm_camera_super_buf_notify_mode_t notify_mode;
     uint8_t water_mark;

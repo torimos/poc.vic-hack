@@ -1,0 +1,109 @@
+---32---  ----8---  ------- variable name --------
+........  ........  lib > struct mm_camera_lib_handle [478112] 
+........  ........  lib.app_ctx > struct m_camera_app_t
+00000000: 00000000: lib.app_ctx.num_cameras > uint8_t
+........  ........  lib.app_ctx.hal_lib > struct hal_interface_lib_t
+00000001: 00000004: lib.app_ctx.hal_lib.ptr > void*
+00000002: 00000008: lib.app_ctx.hal_lib.ptr_jpeg > void*
+00000003: 00000012: lib.app_ctx.hal_lib.get_num_of_cameras > void*
+00000004: 00000016: lib.app_ctx.hal_lib.mm_camera_open > void*
+00000005: 00000020: lib.app_ctx.hal_lib.jpeg_open > void*
+--------  --------
+
+
+
+........  ........  lib.test_obj > struct mm_camera_test_obj_t [480256]
+00000006: 00000024: lib.test_obj.cam > struct mm_camera_vtbl_t*
+00000007: 00000028: lib.test_obj.num_channels > uint8_t 
+........  ........  lib.test_obj.channels > struct mm_camera_channel_t[56088][MM_CHANNEL_TYPE_MAX(7)]
+00000008: 00000032: lib.test_obj.channels[0].ch_id > uint32_t
+00000009: 00000036: lib.test_obj.channels[0].num_streams > uint8_t
+........  ........  lib.test_obj.channels[0].streams > struct mm_camera_stream_t[3505*4=14020][MAX_STREAM_NUM_IN_BUNDLE(4)];
+00000010: 00000040: lib.test_obj.channels[0].streams[0].s_id > uint32_t
+........  ........  lib.test_obj.channels[0].streams[0].s_config > struct mm_camera_stream_config_t[11*4=44]
+00000011: 00000044: lib.test_obj.channels[0].streams[0].s_config.stream_info > struct cam_stream_info_t*
+........  ........  lib.test_obj.channels[0].streams[0].s_config.padding_info > struct cam_padding_info_t
+00000012: 00000048: lib.test_obj.channels[0].streams[0].s_config.padding_info.width_padding > uint32_t
+00000013: 00000052: lib.test_obj.channels[0].streams[0].s_config.padding_info.height_padding > uint32_t
+00000014: 00000056: lib.test_obj.channels[0].streams[0].s_config.padding_info.plane_padding > uint32_t
+........  ........  lib.test_obj.channels[0].streams[0].s_config.mem_vtbl > struct mm_camera_stream_mem_vtbl_t
+00000015: 00000060: lib.test_obj.channels[0].streams[0].s_config.mem_vtbl.user_data > void*
+00000016: 00000064: lib.test_obj.channels[0].streams[0].s_config.mem_vtbl.get_bufs > void*
+00000017: 00000068: lib.test_obj.channels[0].streams[0].s_config.mem_vtbl.put_bufs > void*
+00000018: 00000072: lib.test_obj.channels[0].streams[0].s_config.mem_vtbl.invalidate_buf > void*
+00000019: 00000076: lib.test_obj.channels[0].streams[0].s_config.mem_vtbl.clean_invalidate_buf > void*
+00000020: 00000080: lib.test_obj.channels[0].streams[0].s_config.stream_cb > void*
+00000021: 00000084: lib.test_obj.channels[0].streams[0].s_config.userdata > void* 
+........  ........  lib.test_obj.channels[0].streams[0].offset > struct cam_frame_len_offset_t[66*4=264] 
+00000022: 00000088: lib.test_obj.channels[0].streams[0].offset.num_planes > uint32_t
+00000023: 00000092: lib.test_obj.channels[0].streams[0].offset.mp > struct cam_mp_len_offset_t[8*4=32][VIDEO_MAX_PLANES(8)]
+00000087: 00000348: lib.test_obj.channels[0].streams[0].offset.frame_len > uint32_t
+
+00000088: 00000352: lib.test_obj.channels[0].streams[0].num_of_bufs > uint8_t
+00000089: 00000356: lib.test_obj.channels[0].streams[0].multipleOf > uint32_t
+00000090: 00000360: lib.test_obj.channels[0].streams[0].s_bufs > struct mm_camera_app_buf_t[137*4=548][MM_CAMERA_MAX_NUM_FRAMES(24)]
+--------  --------
+........  ........: lib.test_obj.channels[0].streams[0].s_info_buf > struct mm_camera_app_buf_t[137*4=548]
+........  ........: lib.test_obj.channels[0].streams[0].s_info_buf.buf > struct mm_camera_buf_def_t [132*4=528]
+00003378: 00013512: lib.test_obj.channels[0].streams[0].s_info_buf.buf.stream_id > uint32_t
+00003379: 00013516: lib.test_obj.channels[0].streams[0].s_info_buf.buf.stream_type > int8_t
+          00013517: lib.test_obj.channels[0].streams[0].s_info_buf.buf.buf_type > int16_t
+00003380: 00013520: lib.test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx > uint32_t
+00003381: 00013524: lib.test_obj.channels[0].streams[0].s_info_buf.buf.is_uv_subsampled > uint8_t
+00003382: 00013528: lib.test_obj.channels[0].streams[0].s_info_buf.buf.ts > struct timespec > uint64_t
+00003384: 00013536: lib.test_obj.channels[0].streams[0].s_info_buf.buf.frame_idx > uint32_t
+........  ........: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf > struct mm_camera_plane_buf_def_t [121*4=484]
+00003385: 00013540: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.num_planes > int8_t
+........  ........: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.planes > struct v4l2_plane[15*4=60][VIDEO_MAX_PLANES(8)]
+00003386: 00013544: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.planes[0].bytesused > uint32_t
+00003387: 00013548: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.planes[0].length > uint32_t
+00003388: 00013552: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.planes[0].userptr > uint32_t
+00003389: 00013556: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.planes[0].data_offset > uint32_t
+00003390: 00013560: lib.test_obj.channels[0].streams[0].s_info_buf.buf.planes_buf.planes[0].reserved > uint32_t[11]
+--------  --------
+00003506: 00014024: lib.test_obj.channels[0].streams[0].s_info_buf.buf.fd > uint32_t
+00003507: 00014028: lib.test_obj.channels[0].streams[0].s_info_buf.buf.buffer > uint32_t
+00003508: 00014032: lib.test_obj.channels[0].streams[0].s_info_buf.buf.frame_len > size_t
+00003509: 00014036: lib.test_obj.channels[0].streams[0].s_info_buf.buf.mem_info > void*
+........  ........  lib.test_obj.channels[0].streams[0].s_info_buf.mem_info > struct mm_camera_buf_def_t [5*4=20]
+00003510: 00014040: lib.test_obj.channels[0].streams[0].s_info_buf.mem_info.fd > int32_t
+00003511: 00014044: lib.test_obj.channels[0].streams[0].s_info_buf.mem_info.main_ion_fd > int32_t
+00003512: 00014048: lib.test_obj.channels[0].streams[0].s_info_buf.mem_info.handle > ion_user_handle_t
+00003513: 00014052: lib.test_obj.channels[0].streams[0].s_info_buf.mem_info.size > size_t
+00003514: 00014056: lib.test_obj.channels[0].streams[0].s_info_buf.mem_info.data > parm_buffer_t*
+--------  --------
+
+00098291: 00393164: lib.test_obj.cap_buf.buf.buffer > void* //cam_capability_t *
+00098304: 00393216: lib.test_obj.cap_buf.mem_info.data > struct parm_buffer_t*
+--------  --------
+00098872: 00395488: lib.test_obj.slice_size > uint32_t
+--------  --------
+00098879: 00395516: lib.test_obj.buffer_width > uint32_t
+00098880: 00395520: lib.test_obj.buffer_height > uint32_t
+00098881: 00395524: lib.test_obj.buffer_size > uint32_t
+00098882: 00395528: lib.test_obj.buffer_format > enum cam_format_t
+--------  --------
+00098886: 00395544: lib.test_obj.zsl_enabled > int32_t
+00098887: 00395548: lib.test_obj.focus_supported > int8_t
+--------  --------
+00098893: 00395572: lib.test_obj.enable_reproc > int8_t
+--------  --------
+00120070: 00480280: lib.test_obj.current_params > struct mm_camera_lib_params
+00120070: 00480280: lib.test_obj.current_params.stream_width > uint32_t
+00120071: 00480284: lib.test_obj.current_params.stream_height > uint32_t
+00120072: 00480288: lib.test_obj.current_params.af_mode > enum cam_focus_mode_type
+00120073: 00480292: lib.test_obj.stream_running > int32_t
+??00120074: 00480296: lib.test_obj.tsctrl > struct tuningserver_t
+
+
+
+
+........  ........  ........  
+00000000: 00480320: ----------lib end-----------
+
+
+
+
+mm_camera_test_obj_t [120064*4=480256]
+cam_capability_t [1898*4=7592]
+cam_stream_info_t [233*4=932]
