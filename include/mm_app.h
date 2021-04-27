@@ -11,10 +11,36 @@ extern "C" {
 #endif
 
 //=================================================================================================
-#define MM_CHANNEL_TYPE_MAX 7
 #define VIDEO_MAX_PLANES 8
 #define MAX_STREAM_NUM_IN_BUNDLE 4
 #define MM_CAMERA_MAX_NUM_FRAMES 24
+
+#define ION_IOC_INV_CACHES 0xC0144D01
+
+typedef enum {
+    MM_CAMERA_OK,
+    MM_CAMERA_E_GENERAL,
+    MM_CAMERA_E_NO_MEMORY,
+    MM_CAMERA_E_NOT_SUPPORTED,
+    MM_CAMERA_E_INVALID_INPUT,
+    MM_CAMERA_E_INVALID_OPERATION, /* 5 */
+    MM_CAMERA_E_ENCODE,
+    MM_CAMERA_E_BUFFER_REG,
+    MM_CAMERA_E_PMEM_ALLOC,
+    MM_CAMERA_E_CAPTURE_FAILED,
+    MM_CAMERA_E_CAPTURE_TIMEOUT, /* 10 */
+} mm_camera_status_type_t;
+
+typedef enum {
+    MM_CHANNEL_TYPE_ZSL,      /* preview, and snapshot main */
+    MM_CHANNEL_TYPE_CAPTURE,  /* snapshot main, and postview */
+    MM_CHANNEL_TYPE_PREVIEW,  /* preview only */
+    MM_CHANNEL_TYPE_SNAPSHOT, /* snapshot main only */
+    MM_CHANNEL_TYPE_VIDEO,    /* video only */
+    MM_CHANNEL_TYPE_RDI,      /* rdi only */
+    MM_CHANNEL_TYPE_REPROCESS,/* offline reprocess */
+    MM_CHANNEL_TYPE_MAX
+} mm_camera_channel_type_t;
 
 typedef enum {
     CAM_WAVELET_DENOISE_YCBCR_PLANE,
@@ -235,10 +261,6 @@ typedef struct {
     uint8_t data[12*4];
 } mm_camera_queue_t;
 
-struct v4l2_plane {
-    uint8_t data[15*4];
-};
-
 struct mdp_overlay {
     uint8_t data[255*4];
 };
@@ -246,10 +268,6 @@ struct mdp_overlay {
 struct fb_var_screeninfo {
     uint8_t data[40*4];
 };
-
-typedef struct {
-    uint8_t data[7*4];
-} mm_camera_super_buf_t;
 
 typedef struct{
     uint8_t data[8*4];
@@ -272,6 +290,29 @@ typedef struct {
   uint32_t w;
   uint32_t h;
 } mm_dimension;
+
+typedef enum {
+    MM_CAMERA_SUPER_BUF_NOTIFY_BURST = 0,
+    MM_CAMERA_SUPER_BUF_NOTIFY_CONTINUOUS,
+    MM_CAMERA_SUPER_BUF_NOTIFY_MAX
+} mm_camera_super_buf_notify_mode_t;
+
+typedef enum {
+    MM_CAMERA_SUPER_BUF_PRIORITY_NORMAL = 0,
+    MM_CAMERA_SUPER_BUF_PRIORITY_FOCUS,
+    MM_CAMERA_SUPER_BUF_PRIORITY_EXPOSURE_BRACKETING,
+    MM_CAMERA_SUPER_BUF_PRIORITY_LOW,/* Bundled metadata frame may not match*/
+    MM_CAMERA_SUPER_BUF_PRIORITY_MAX
+} mm_camera_super_buf_priority_t;
+
+typedef struct {
+    mm_camera_super_buf_notify_mode_t notify_mode;
+    uint8_t water_mark;
+    uint8_t look_back;
+    uint8_t post_frame_skip;
+    uint8_t max_unmatched_frames;
+    mm_camera_super_buf_priority_t priority;
+} mm_camera_channel_attr_t;
 
 typedef struct {
   /* config a job -- async call */
@@ -316,6 +357,15 @@ typedef struct {
     cam_denoise_process_type_t process_plates;
 } cam_denoise_param_t;
 
+struct v4l2_plane {
+    // uint8_t data[15*4];
+    uint32_t bytesused;
+    uint32_t length;
+    uint32_t userptr;
+    uint32_t data_offset;
+    uint32_t reserved[11];
+};
+
 typedef struct {
     int8_t num_planes;
     struct v4l2_plane planes[VIDEO_MAX_PLANES];
@@ -335,6 +385,17 @@ typedef struct mm_camera_buf_def {
     size_t frame_len;
     void *mem_info;
 } mm_camera_buf_def_t;
+
+typedef struct {
+    uint32_t camera_handle;
+    uint32_t ch_id;
+    uint32_t num_bufs;
+    mm_camera_buf_def_t* bufs[MAX_STREAM_NUM_IN_BUNDLE];
+//     uint8_t data[7*4];
+} mm_camera_super_buf_t;
+
+typedef void (*mm_camera_buf_notify_t) (mm_camera_super_buf_t *bufs,
+                                        void *user_data);
 
 typedef void (*prev_callback) (mm_camera_buf_def_t *preview_frame);
 

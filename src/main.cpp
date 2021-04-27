@@ -12,68 +12,14 @@ static pthread_mutex_t app_mutex;
 static int thread_status = 0;
 static pthread_cond_t app_cond_v;
 
-void test(const char* t, int base, void* offset, int expected)
-{
-    int v = (int)offset - base;
-    if (v != expected)
-    {
-        printf("%s: expected %d but got %d\n", t, expected, v);
-    }
-}
 
-void validate()
-{
-    static mm_camera_lib_handle x;
-    long base = (long)&x;
-    test("test_obj.channels[0].streams[0].s_info_buf.buf.stream_type", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.stream_type, 13516);
-    test("test_obj.channels[0].streams[0].s_info_buf.buf.buf_type", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.buf_type, 13517);
-    test("test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx, 13520);
-    test("test_obj.tune_data", base, &x.test_obj.tune_data, 395649);
-    test("tsctrl", base, &x.tsctrl, 480296);
-    if (sizeof(mm_camera_lib_handle) != 480320)
-        printf("%s: mm_camera_lib_handlesize expected %d but got %d\n", __func__, 480320, sizeof(mm_camera_lib_handle));
-
-}
-
-int main(int argc, char **argv)
-{
-    printf("%s: camera test\n", __func__);
-
-    validate();
-    return -1;
-}
-
-/*
 int (*mm_camera_lib_open) (mm_camera_lib_handle *handle, int cam_id);
-// int (*mm_app_stop_preview) (mm_camera_test_obj_t *test_obj);
-// int (*mm_app_start_capture_raw) (mm_camera_test_obj_t *test_obj, uint8_t num_snapshots);
-// int (*mm_app_stop_capture_raw) (mm_camera_test_obj_t *test_obj);
 int (*mm_app_start_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
 int (*mm_app_stop_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
 mm_camera_channel_t* (*mm_app_add_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_type_t ch_type, mm_camera_channel_attr_t *attr, mm_camera_buf_notify_t channel_cb, void *userdata);
 int (*mm_app_del_channel) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
 mm_camera_stream_t* (*mm_app_add_stream) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel);
 int (*mm_app_del_stream) (mm_camera_test_obj_t *test_obj, mm_camera_channel_t *channel, mm_camera_stream_t *stream);
-// int (*mm_app_stream_initbuf) (cam_frame_len_offset_t *frame_offset_info,
-//                           uint8_t *num_bufs,
-//                           uint8_t **initial_reg_flag,
-//                           mm_camera_buf_def_t **bufs,
-//                           mm_camera_map_unmap_ops_tbl_t *ops_tbl,
-//                           void *user_data);
-// int32_t (*mm_app_stream_deinitbuf) (mm_camera_map_unmap_ops_tbl_t *ops_tbl, void *user_data);
-// int32_t (*mm_app_stream_clean_invalidate_buf) (uint32_t index, void *user_data);
-// int32_t (*mm_app_stream_invalidate_buf) (uint32_t index, void *user_data);
-int (*mm_app_config_stream)(mm_camera_test_obj_t *test_obj,
-                         mm_camera_channel_t *channel,
-                         mm_camera_stream_t *stream,
-                         mm_camera_stream_config_t *config);
-mm_camera_channel_t* (*mm_app_get_channel_by_type) (mm_camera_test_obj_t *test_obj,
-                                                 mm_camera_channel_type_t ch_type);
-// int (*mm_app_alloc_bufs) (mm_camera_app_buf_t* app_bufs,
-//                       cam_frame_len_offset_t *frame_offset_info,
-//                       uint8_t num_bufs,
-//                       uint8_t is_streambuf,
-//                       size_t multipleOf);
 mm_camera_stream_t * (*mm_app_add_snapshot_stream) (
                                                 mm_camera_test_obj_t *test_obj,
                                                 mm_camera_channel_t *channel,
@@ -87,33 +33,32 @@ mm_camera_stream_t * (*mm_app_add_raw_stream) (mm_camera_test_obj_t *test_obj,
                                                 void *userdata,
                                                 uint8_t num_bufs,
                                                 uint8_t num_burst);
-int (*mm_app_stop_and_del_channel) (mm_camera_test_obj_t *test_obj,
-                                       mm_camera_channel_t *channel);
+
+mm_camera_stream_t * (*mm_app_add_rdi_stream) (mm_camera_test_obj_t *test_obj,
+                                               mm_camera_channel_t *channel,
+                                               mm_camera_buf_notify_t stream_cb,
+                                               void *userdata,
+                                               uint8_t num_bufs,
+                                               uint8_t num_burst);
+
+int (*mm_app_cache_ops) (mm_camera_app_meminfo_t *mem_info,int cmd);
 
 int lib_init(mm_camera_lib_handle* lib_handle)
 {
     void* ptr = dlopen("libmm-qcamera.so", RTLD_NOW);
     *(void **)&(mm_camera_lib_open) = dlsym(ptr, "mm_camera_lib_open");
-    // *(void **)&(mm_app_stop_preview) = dlsym(ptr, "mm_app_stop_preview");
-    // *(void **)&(mm_app_start_capture_raw) = dlsym(ptr, "mm_app_start_capture_raw");
-    // *(void **)&(mm_app_stop_capture_raw) = dlsym(ptr, "mm_app_stop_capture_raw");
-
     *(void **)&(mm_app_start_channel) = dlsym(ptr, "mm_app_start_channel");
     *(void **)&(mm_app_stop_channel) = dlsym(ptr, "mm_app_stop_channel");
     *(void **)&(mm_app_add_channel) = dlsym(ptr, "mm_app_add_channel");
     *(void **)&(mm_app_del_channel) = dlsym(ptr, "mm_app_del_channel");
     *(void **)&(mm_app_add_stream) = dlsym(ptr, "mm_app_add_stream");
     *(void **)&(mm_app_del_stream) = dlsym(ptr, "mm_app_del_stream");
-    // *(void **)&(mm_app_stream_initbuf) = dlsym(ptr, "mm_app_stream_initbuf");
-    // *(void **)&(mm_app_stream_deinitbuf) = dlsym(ptr, "mm_app_stream_deinitbuf");
-    // *(void **)&(mm_app_stream_clean_invalidate_buf) = dlsym(ptr, "mm_app_stream_clean_invalidate_buf");
-    // *(void **)&(mm_app_stream_invalidate_buf) = dlsym(ptr, "mm_app_stream_invalidate_buf");
-    *(void **)&(mm_app_get_channel_by_type) = dlsym(ptr, "mm_app_get_channel_by_type");
-    *(void **)&(mm_app_config_stream) = dlsym(ptr, "mm_app_config_stream");
-    // *(void **)&(mm_app_alloc_bufs) = dlsym(ptr, "mm_app_alloc_bufs");
     *(void **)&(mm_app_add_snapshot_stream) = dlsym(ptr, "mm_app_add_snapshot_stream");
     *(void **)&(mm_app_add_raw_stream) = dlsym(ptr, "mm_app_add_raw_stream");
-    *(void **)&(mm_app_stop_and_del_channel) = dlsym(ptr, "mm_app_stop_and_del_channel");
+    *(void **)&(mm_app_add_rdi_stream) = dlsym(ptr, "mm_app_add_rdi_stream");
+    *(void **)&(mm_app_cache_ops) = dlsym(ptr, "mm_app_cache_ops");
+    
+
     printf("%s: libmm-qcamera.so lib initialized\n", __func__);
 
     int r = mm_camera_lib_open(lib_handle, 0);
@@ -122,11 +67,11 @@ int lib_init(mm_camera_lib_handle* lib_handle)
         printf("%s:mm_camera_lib_open() err=%d\n", __func__, r);
         return -1;
     }
-    // else if ( !lib_handle->app_ctx.num_cameras )
-    // {
-    //     printf("%s: No camera sensors reported!\n", __func__);
-    //     return -2;
-    // }
+    else if ( !lib_handle->app_ctx.num_cameras )
+    {
+        printf("%s: No camera sensors reported!\n", __func__);
+        return -2;
+    }
     printf("%s: mm_camera_lib_open done!\n", __func__);
     return 0;
 }
@@ -160,109 +105,57 @@ void mm_camera_app_done()
   pthread_mutex_unlock(&app_mutex);
 }
 
-// void mm_app_dump_frame(mm_camera_buf_def_t *frame,
-//                        const char *name,
-//                        const char *ext,
-//                        uint32_t frame_idx)
-// {
-//     char file_name[FILENAME_MAX];
-//     int file_fd;
-//     int i;
-//     int offset = 0;
-//     if ( frame != NULL) {
-//         snprintf(file_name, sizeof(file_name), "/hack/%s_%04d.%s", name, frame_idx, ext);
-//         file_fd = open(file_name, O_RDWR | O_CREAT, 0777);
-//         if (file_fd < 0) {
-//             printf("%s: ERROR. cannot open file %s \n", __func__, file_name);
-//         } else {
-//             for (i = 0; i < frame->planes_buf.num_planes; i++) {
-//                 printf("%s: saving file from address: %p, data offset: %d, "
-//                      "length: %d \n", __func__, frame->buffer,
-//                     frame->planes_buf.planes[i].data_offset, frame->planes_buf.planes[i].length);
-//                 write(file_fd,
-//                       (uint8_t *)frame->buffer + offset,
-//                       frame->planes_buf.planes[i].length);
-//                 offset += (int)frame->planes_buf.planes[i].length;
-//             }
-
-//             close(file_fd);
-//             printf("dump %s", file_name);
-//         }
-//     }
-// }
-
-static void mm_anki_app_rdi_notify_cb(void *bufs, void *user_data)//mm_camera_super_buf_t
+void mm_app_dump_frame(mm_camera_buf_def_t *frame,
+                       const char *name,
+                       const char *ext,
+                       uint32_t frame_idx)
 {
+    char file_name[FILENAME_MAX];
+    int file_fd;
+    int i;
+    int offset = 0;
+    if ( frame != NULL) {
+        snprintf(file_name, sizeof(file_name), "/hack/%s_%04d.%s", name, frame_idx, ext);
+        file_fd = open(file_name, O_RDWR | O_CREAT, 0777);
+        if (file_fd < 0) {
+            printf("%s: ERROR. cannot open file %s \n", __func__, file_name);
+        } else {
+            for (i = 0; i < frame->planes_buf.num_planes; i++) {
+                printf("%s: saving file from address: %p, data offset: %d, "
+                     "length: %d \n", __func__, frame->buffer,
+                    frame->planes_buf.planes[i].data_offset, frame->planes_buf.planes[i].length);
+                write(file_fd,
+                      (uint8_t *)frame->buffer + offset,
+                      frame->planes_buf.planes[i].length);
+                offset += (int)frame->planes_buf.planes[i].length;
+            }
 
+            close(file_fd);
+            printf("dump %s", file_name);
+        }
+    }
+}
+
+static void mm_anki_app_rdi_notify_cb(mm_camera_super_buf_t *bufs, void *user_data)
+{
     int rc;
     uint32_t i = 0;
     mm_camera_test_obj_t *pme = (mm_camera_test_obj_t *)user_data;
-
-    printf("%s: BEGIN\n", __func__);
+    mm_camera_buf_def_t *frame = bufs->bufs[0];
+    printf("%s: BEGIN - length=%zu, frame idx = %d stream_id=%d\n", __func__, frame->frame_len, frame->frame_idx, frame->stream_id);
+    mm_app_dump_frame(frame, "RDI_dump","raw", frame->frame_idx);
+    mm_app_cache_ops((mm_camera_app_meminfo_t *)frame->mem_info, ION_IOC_INV_CACHES);
 
     mm_camera_app_done();
 
     printf("%s: END\n", __func__);
 }
 
-
-void validate(mm_camera_lib_handle* h)
-{
-    printf("%s: stream_width: %d\n", __func__, h->current_params.stream_width);
-    printf("%s: stream_height: %d\n", __func__, h->current_params.stream_height);
-    printf("%s: af_mode: %d\n", __func__, h->current_params.af_mode);
-    printf("%s: buffer_width: %d\n", __func__, h->test_obj.buffer_width);
-    printf("%s: buffer_height: %d\n", __func__, h->test_obj.buffer_height);
-    printf("%s: buffer_format: %d\n", __func__, h->test_obj.buffer_format);
-    
-    printf("%s: cam->camera_handle: %x\n", __func__, h->test_obj.cam->camera_handle);
-    printf("%s: cam->ops: %x\n", __func__, h->test_obj.cam->ops);
-
-    printf("%s: cap_buf.mem_info.fd: %x\n", __func__, h->test_obj.cap_buf.mem_info.fd);
-    printf("%s: cap_buf.mem_info.main_ion_fd: %x\n", __func__, h->test_obj.cap_buf.mem_info.main_ion_fd);
-    printf("%s: cap_buf.mem_info.handle: %x\n", __func__, h->test_obj.cap_buf.mem_info.handle);
-    printf("%s: cap_buf.mem_info.size: %x\n", __func__, h->test_obj.cap_buf.mem_info.size);
-    printf("%s: cap_buf.mem_info.data: %x\n", __func__, h->test_obj.cap_buf.mem_info.data);
-
-    printf("%s: parm_buf.mem_info.fd: %x\n", __func__, h->test_obj.parm_buf.mem_info.fd);
-    printf("%s: parm_buf.mem_info.main_ion_fd: %x\n", __func__, h->test_obj.parm_buf.mem_info.main_ion_fd);
-    printf("%s: parm_buf.mem_info.handle: %x\n", __func__, h->test_obj.parm_buf.mem_info.handle);
-    printf("%s: parm_buf.mem_info.size: %x\n", __func__, h->test_obj.parm_buf.mem_info.size);
-    printf("%s: parm_buf.mem_info.data: %x\n", __func__, h->test_obj.parm_buf.mem_info.data);
-    printf("%s: params_buffer: %x\n", __func__, h->test_obj.params_buffer);
-    
-    printf("%s: test_obj.jpeg_hdl: %x\n", __func__, h->test_obj.jpeg_hdl);
-        
-    //mem_dump("xxx", &h->test_obj, 256);
-}
-
-mm_camera_stream_t * mm_my_app_add_rdi_stream(mm_camera_test_obj_t *test_obj,
-                                               mm_camera_channel_t *channel,
-                                               mm_camera_buf_notify_t stream_cb,
-                                               void *userdata,
-                                               uint8_t num_bufs,
-                                               uint8_t num_burst)
-{
-    mm_camera_stream_t *stream = NULL;
-
-    stream = mm_app_add_stream(test_obj, channel);
-    if (NULL == stream) {
-        printf("%s: ERROR. add stream failed\n", __func__);
-        return NULL;
-    }
-
-    // int rc = mm_app_config_stream(test_obj, channel, stream, &stream->s_config);
-    // if (MM_CAMERA_OK != rc) {
-    //     printf("%s: ERROR. config rdi stream err=%d\n", __func__, rc);
-    //     return NULL;
-    // }
-    return NULL;
-}
-
 mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb)
 {
-    mm_camera_channel_t *channel = 0;
-    mm_camera_stream_t *stream = 0;
+    printf("%s: begin\n", __func__);
+    mm_camera_channel_t *channel = NULL;
+    mm_camera_stream_t *stream = NULL;
 
     channel = mm_app_add_channel(test_obj,
                                  MM_CHANNEL_TYPE_RDI,
@@ -273,8 +166,9 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
         printf("%s: ERROR. add channel failed\n", __func__);
         return NULL;
     }
+    printf("%s: mm_app_add_channel: ok\n", __func__);
 
-    stream = mm_my_app_add_rdi_stream(test_obj, 
+    stream = mm_app_add_rdi_stream(test_obj, 
                                         channel, 
                                         notify_cb, 
                                         test_obj, 
@@ -285,18 +179,21 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
         mm_app_del_channel(test_obj, channel);
         return NULL;
     }
+    printf("%s: mm_app_add_rdi_stream: ok\n", __func__);
 
     return channel;
 }
 
 int mm_my_app_start_rdi(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb)
 {
+    printf("%s: begin\n", __func__);
     int rc = MM_CAMERA_OK;
     mm_camera_channel_t *channel = mm_my_app_add_rdi_channel(test_obj, num_burst, notify_cb);
     if (NULL == channel) {
         printf("%s: ERROR. add channel failed\n", __func__);
         return -MM_CAMERA_E_GENERAL;
     }
+    printf("%s: mm_my_app_add_rdi_channel: ok\n", __func__);
 
     rc = mm_app_start_channel(test_obj, channel);
     if (MM_CAMERA_OK != rc) {
@@ -304,14 +201,45 @@ int mm_my_app_start_rdi(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_ca
         mm_app_del_channel(test_obj, channel);
         return rc;
     }
+    printf("%s: mm_app_start_channel: ok\n", __func__);
 
     return rc;
 }
 
 
+int test(const char* t, int base, void* offset, int expected)
+{
+    int v = (int)offset - base;
+    if (v != expected)
+    {
+        printf("%s: expected %d but got %d\n", t, expected, v);
+        return 1;
+    }
+    return 0;
+}
+
+int validate()
+{
+    static mm_camera_lib_handle x;
+    long base = (long)&x;
+    if (test("test_obj.channels[0].streams[0].s_info_buf.buf.stream_type", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.stream_type, 13516)) return -1;
+    if (test("test_obj.channels[0].streams[0].s_info_buf.buf.buf_type", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.buf_type, 13517)) return -1;
+    if (test("test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx, 13520)) return -1;
+    if (test("test_obj.tune_data", base, &x.test_obj.tune_data, 395649)) return -1;
+    if (test("tsctrl", base, &x.tsctrl, 480296)) return -1;
+    if (sizeof(mm_camera_lib_handle) != 480320)
+    {
+        printf("%s: mm_camera_lib_handlesize expected %d but got %d\n", __func__, 480320, sizeof(mm_camera_lib_handle));
+        return -1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     printf("%s: camera test\n", __func__);
+    if (!validate()) printf("%s: validation - OK\n", __func__);
+    else return -1;
 
     mm_camera_lib_handle handle;
     GPIO cenPin, sbyPin;
@@ -319,41 +247,15 @@ int main(int argc, char **argv)
     gpioInit(&sbyPin, 94, 1, 0); //unpause
     printf("%s: gpio initialized\n", __func__);
 
-    
-    printf("%s: mm_camera_lib_handle sz: %d == 480320\n", __func__, sizeof(mm_camera_lib_handle));
-    printf("%s: mm_camera_test_obj_t sz: %d == 480256\n", __func__, sizeof(mm_camera_test_obj_t));
-    printf("%s: mm_camera_stream_t sz: %d == 14020\n", __func__, sizeof(mm_camera_stream_t));
-    printf("%s: mm_camera_channel_t sz: %d == 56088\n", __func__, sizeof(mm_camera_channel_t));
-    printf("%s: mm_camera_stream_config_t sz: %d == ???\n", __func__, sizeof(mm_camera_stream_config_t));
-    return -1;
     if (!lib_init(&handle))
     {
-        validate(&handle);
-        // int rc = mm_my_app_start_rdi(&handle.test_obj, 0, mm_anki_app_rdi_notify_cb);
-        // if (!rc)
-        // {
-        //     printf("%s: mm_anki_app_start_rdi: ok\n", __func__);
-        //     mm_camera_app_wait();
-        //     printf("%s: mm_camera_app_wait: done\n", __func__);
-        // }
-
-
-        // //if (!mm_app_stop_preview(&handle.test_obj))
-        // {
-        // //    printf("%s: mm_app_stop_preview: ok\n", __func__);
-        //     if (!mm_app_start_capture_raw(&handle.test_obj, 5))
-        //     {
-        //         printf("%s: mm_app_start_capture_raw: ok\n", __func__);
-        //         mm_camera_app_wait();
-        //         printf("%s: mm_camera_app_wait: ok\n", __func__);
-        //         if (!mm_app_stop_capture_raw(&handle.test_obj))
-        //         {
-        //             printf("%s: mm_app_stop_capture_raw: ok\n", __func__);
-        //         }
-        //     }
-        // }
+        int rc = mm_my_app_start_rdi(&handle.test_obj, 0, mm_anki_app_rdi_notify_cb);
+        if (!rc)
+        {
+            printf("%s: mm_anki_app_start_rdi: ok\n", __func__);
+            mm_camera_app_wait();
+            printf("%s: mm_camera_app_wait: done\n", __func__);
+        }
     }
     return 0;
 }
-
-*/
