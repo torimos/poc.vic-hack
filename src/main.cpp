@@ -12,6 +12,38 @@ static pthread_mutex_t app_mutex;
 static int thread_status = 0;
 static pthread_cond_t app_cond_v;
 
+void test(const char* t, int base, void* offset, int expected)
+{
+    int v = (int)offset - base;
+    if (v != expected)
+    {
+        printf("%s: expected %d but got %d\n", t, expected, v);
+    }
+}
+
+void validate()
+{
+    static mm_camera_lib_handle x;
+    long base = (long)&x;
+    test("test_obj.channels[0].streams[0].s_info_buf.buf.stream_type", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.stream_type, 13516);
+    test("test_obj.channels[0].streams[0].s_info_buf.buf.buf_type", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.buf_type, 13517);
+    test("test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx", base, &x.test_obj.channels[0].streams[0].s_info_buf.buf.buf_idx, 13520);
+    test("test_obj.tune_data", base, &x.test_obj.tune_data, 395649);
+    test("tsctrl", base, &x.tsctrl, 480296);
+    if (sizeof(mm_camera_lib_handle) != 480320)
+        printf("%s: mm_camera_lib_handlesize expected %d but got %d\n", __func__, 480320, sizeof(mm_camera_lib_handle));
+
+}
+
+int main(int argc, char **argv)
+{
+    printf("%s: camera test\n", __func__);
+
+    validate();
+    return -1;
+}
+
+/*
 int (*mm_camera_lib_open) (mm_camera_lib_handle *handle, int cam_id);
 // int (*mm_app_stop_preview) (mm_camera_test_obj_t *test_obj);
 // int (*mm_app_start_capture_raw) (mm_camera_test_obj_t *test_obj, uint8_t num_snapshots);
@@ -324,3 +356,4 @@ int main(int argc, char **argv)
     return 0;
 }
 
+*/
