@@ -249,7 +249,7 @@ typedef enum {
 
 typedef void mm_jpeg_encode_params_t;
 typedef void mm_jpeg_job_t;
-typedef void mm_camera_ops_t;
+typedef void* mm_camera_ops_t;
 typedef void metadata_buffer_t;
 typedef metadata_buffer_t parm_buffer_t;
 

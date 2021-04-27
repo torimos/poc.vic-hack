@@ -41,6 +41,9 @@ mm_camera_stream_t * (*mm_app_add_rdi_stream) (mm_camera_test_obj_t *test_obj,
                                                uint8_t num_bufs,
                                                uint8_t num_burst);
 
+
+int (*mm_app_start_rdi) (mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb);
+
 int (*mm_app_cache_ops) (mm_camera_app_meminfo_t *mem_info,int cmd);
 
 int lib_init(mm_camera_lib_handle* lib_handle)
@@ -57,7 +60,7 @@ int lib_init(mm_camera_lib_handle* lib_handle)
     *(void **)&(mm_app_add_raw_stream) = dlsym(ptr, "mm_app_add_raw_stream");
     *(void **)&(mm_app_add_rdi_stream) = dlsym(ptr, "mm_app_add_rdi_stream");
     *(void **)&(mm_app_cache_ops) = dlsym(ptr, "mm_app_cache_ops");
-    
+    *(void **)&(mm_app_start_rdi) = dlsym(ptr, "mm_app_start_rdi");
 
     printf("%s: libmm-qcamera.so lib initialized\n", __func__);
 
@@ -121,29 +124,30 @@ void mm_app_dump_frame(mm_camera_buf_def_t *frame,
             printf("%s: ERROR. cannot open file %s \n", __func__, file_name);
         } else {
             for (i = 0; i < frame->planes_buf.num_planes; i++) {
-                printf("%s: saving file from address: %p, data offset: %d, "
-                     "length: %d \n", __func__, frame->buffer,
-                    frame->planes_buf.planes[i].data_offset, frame->planes_buf.planes[i].length);
-                write(file_fd,
-                      (uint8_t *)frame->buffer + offset,
-                      frame->planes_buf.planes[i].length);
+                printf("%s: saving file from address: %p, data offset: %d, length: %d\n", 
+                    __func__, frame->buffer, frame->planes_buf.planes[i].data_offset, frame->planes_buf.planes[i].length);
+                write(file_fd, (uint8_t *)frame->buffer + offset, frame->planes_buf.planes[i].length);
                 offset += (int)frame->planes_buf.planes[i].length;
             }
-
             close(file_fd);
             printf("dump %s", file_name);
         }
     }
 }
 
+typedef int32_t (*mm_camera_ops_qbuf_t) (uint32_t camera_handle, uint32_t ch_id, mm_camera_buf_def_t *buf);
+
 static void mm_anki_app_rdi_notify_cb(mm_camera_super_buf_t *bufs, void *user_data)
 {
     int rc;
     uint32_t i = 0;
-    mm_camera_test_obj_t *pme = (mm_camera_test_obj_t *)user_data;
+    mm_camera_test_obj_t *pme = (mm_camera_test_obj_t *) user_data;
     mm_camera_buf_def_t *frame = bufs->bufs[0];
-    printf("%s: BEGIN - length=%zu, frame idx = %d stream_id=%d\n", __func__, frame->frame_len, frame->frame_idx, frame->stream_id);
-    mm_app_dump_frame(frame, "RDI_dump","raw", frame->frame_idx);
+    printf("%s: BEGIN - length=%zu, frame idx = %d stream_id=%d num_bufs=%d\n", 
+        __func__, frame->frame_len, frame->frame_idx, frame->stream_id, bufs->num_bufs);
+    mm_app_dump_frame(frame, "RDI_dump", "raw", frame->frame_idx);
+
+    ((mm_camera_ops_qbuf_t)pme->cam->ops[25])(bufs->camera_handle, bufs->ch_id, frame);
     mm_app_cache_ops((mm_camera_app_meminfo_t *)frame->mem_info, ION_IOC_INV_CACHES);
 
     mm_camera_app_done();
@@ -159,14 +163,17 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
 
     channel = mm_app_add_channel(test_obj,
                                  MM_CHANNEL_TYPE_RDI,
-                                 0,
-                                 0,
-                                 0);
+                                 NULL,
+                                 NULL,
+                                 NULL);
     if (NULL == channel) {
         printf("%s: ERROR. add channel failed\n", __func__);
         return NULL;
     }
     printf("%s: mm_app_add_channel: ok\n", __func__);
+
+   // printf("%s: !!!!!!!!!!!test_obj->cap_buf.buf.frame_len: %d\n", __func__, test_obj->cap_buf.buf.frame_len);
+    //test_obj->cap_buf.buf.buffer; //7592 // 8192
 
     stream = mm_app_add_rdi_stream(test_obj, 
                                         channel, 
@@ -174,6 +181,7 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
                                         test_obj, 
                                         8, 
                                         num_burst);
+
     if (NULL == stream) {
         printf("%s: ERROR. add stream failed\n", __func__);
         mm_app_del_channel(test_obj, channel);
@@ -253,7 +261,8 @@ int main(int argc, char **argv)
         if (!rc)
         {
             printf("%s: mm_anki_app_start_rdi: ok\n", __func__);
-            mm_camera_app_wait();
+            //mm_camera_app_wait();
+            delay(100);
             printf("%s: mm_camera_app_wait: done\n", __func__);
         }
     }
