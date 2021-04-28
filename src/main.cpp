@@ -140,26 +140,26 @@ void mm_app_dump_frame(mm_camera_buf_def_t *frame,
     int i;
     int offset = 0;
     if ( frame != NULL) {
-        snprintf(file_name, sizeof(file_name), "/hack/%s_%04d.%s", name, frame_idx, ext);
-        file_fd = open(file_name, O_RDWR | O_CREAT, 0777);
-        if (file_fd < 0) {
-            printf("%s: ERROR. cannot open file %s \n", __func__, file_name);
-        } else {
-            for (i = 0; i < frame->planes_buf.num_planes; i++) {
-                printf("%s: saving file from address: %p, data offset: %d, length: %d\n", 
-                    __func__, frame->buffer, frame->planes_buf.planes[i].data_offset, frame->planes_buf.planes[i].length);
+        for (i = 0; i < frame->planes_buf.num_planes; i++) {
+            printf("%s: saving file from address: %p, data offset: %d, length: %d\n",  
+                __func__, frame->buffer, frame->planes_buf.planes[i].data_offset, frame->planes_buf.planes[i].length);
+            snprintf(file_name, sizeof(file_name), "/hack/%s_%04d_%02d.%s", name, frame_idx, i, ext);
+            file_fd = open(file_name, O_RDWR | O_CREAT, 0777);
+            if (file_fd < 0) {
+                printf("%s: ERROR. cannot open file %s \n", __func__, file_name);
+            } else {
                 write(file_fd, (uint8_t *)frame->buffer + offset, frame->planes_buf.planes[i].length);
                 offset += (int)frame->planes_buf.planes[i].length;
+                close(file_fd);
+                printf("dump %s", file_name);
             }
-            close(file_fd);
-            printf("dump %s", file_name);
         }
     }
 }
 
 typedef int32_t (*mm_camera_ops_qbuf_t) (uint32_t camera_handle, uint32_t ch_id, mm_camera_buf_def_t *buf);
 
-static void mm_my_app_rdi_notify_cb(mm_camera_super_buf_t *bufs, void *user_data)
+static void mm_my_app_notify_cb(mm_camera_super_buf_t *bufs, void *user_data)
 {
     int rc;
     uint32_t i = 0;
@@ -167,7 +167,7 @@ static void mm_my_app_rdi_notify_cb(mm_camera_super_buf_t *bufs, void *user_data
     mm_camera_buf_def_t *frame = bufs->bufs[0];
     printf("%s: BEGIN - length=%zu, frame idx = %d stream_id=%d num_bufs=%d\n", 
         __func__, frame->frame_len, frame->frame_idx, frame->stream_id, bufs->num_bufs);
-    mm_app_dump_frame(frame, "RDI_dump", "raw", frame->frame_idx);
+    mm_app_dump_frame(frame, "cam_dump", "raw", frame->frame_idx);
 
     ((mm_camera_ops_qbuf_t)pme->cam->ops[25])(bufs->camera_handle, bufs->ch_id, frame);
     mm_app_cache_ops((mm_camera_app_meminfo_t *)frame->mem_info, ION_IOC_INV_CACHES);
@@ -176,6 +176,67 @@ static void mm_my_app_rdi_notify_cb(mm_camera_super_buf_t *bufs, void *user_data
 
     printf("%s: END\n", __func__);
 }
+
+mm_camera_channel_t * mm_my_app_add_preview_channel(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t stream_cb)
+{
+    printf("%s: begin\n", __func__);
+    mm_camera_channel_t *channel = NULL;
+    mm_camera_stream_t *stream = NULL;
+
+    channel = mm_app_add_channel(test_obj,
+                                 MM_CHANNEL_TYPE_PREVIEW,
+                                 NULL,
+                                 NULL,
+                                 NULL);
+    if (NULL == channel) {
+        printf("%s: ERROR. add channel failed\n", __func__);
+        return NULL;
+    }
+    printf("%s: mm_app_add_channel: ok\n", __func__);
+
+    stream = mm_app_add_stream(test_obj, channel);
+    if (stream == NULL)
+    {
+        printf("%s: ERROR. add stream failed\n", __func__);
+        return NULL;
+    }
+    printf("%s: mm_app_add_stream: ok\n", __func__);
+
+
+    stream->s_config.mem_vtbl.get_bufs = mm_app_stream_initbuf;
+    stream->s_config.mem_vtbl.put_bufs = mm_app_stream_deinitbuf;
+    stream->s_config.mem_vtbl.clean_invalidate_buf = mm_app_stream_clean_invalidate_buf;
+    stream->s_config.mem_vtbl.invalidate_buf = mm_app_stream_invalidate_buf;
+    stream->s_config.mem_vtbl.user_data = (void *)stream;
+    stream->s_config.stream_cb = stream_cb;
+    stream->s_config.userdata = (void*)test_obj;
+    stream->num_of_bufs = 7;
+
+    stream->s_config.stream_info = (cam_stream_info_t *)stream->s_info_buf.buf.buffer;
+    memset(stream->s_config.stream_info, 0, sizeof(cam_stream_info_t));
+
+    int* sinfo = (int*)stream->s_config.stream_info->data;
+
+    sinfo[1] = CAM_STREAM_TYPE_PREVIEW;
+    sinfo[2] = CAM_FORMAT_YUV_420_NV21;
+    sinfo[288] = 0; // CAM_STREAMING_MODE_CONTINUOUS
+
+    sinfo[3] = 1280;
+    sinfo[4] = 720;
+    stream->s_config.padding_info.width_padding = 32;
+    stream->s_config.padding_info.height_padding = 32;
+    stream->s_config.padding_info.plane_padding = 32;
+
+    int rc = mm_app_config_stream(test_obj, channel, stream, &stream->s_config);
+    if (MM_CAMERA_OK != rc) {
+        printf("%s: ERROR. config stream failed\n", __func__);
+        mm_app_del_channel(test_obj, channel);
+        return NULL;
+    }
+    printf("%s: mm_app_config_stream: ok\n", __func__);
+    return channel;
+}
+
 
 mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t stream_cb)
 {
@@ -193,20 +254,6 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
         return NULL;
     }
     printf("%s: mm_app_add_channel: ok\n", __func__);
-
-    // stream = mm_app_add_rdi_stream(test_obj, 
-    //                                     channel, 
-    //                                     stream_cb, 
-    //                                     test_obj, 
-    //                                     8, 
-    //                                     num_burst);
-    // if (NULL == stream) {
-    //     printf("%s: ERROR. add stream failed\n", __func__);
-    //     mm_app_del_channel(test_obj, channel);
-    //     return NULL;
-    // }
-    // printf("%s: mm_app_add_rdi_stream: ok\n", __func__);
-
 
     stream = mm_app_add_stream(test_obj, channel);
     if (stream == NULL)
@@ -232,13 +279,14 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
     int* sinfo = (int*)stream->s_config.stream_info->data;
     sinfo[1] = CAM_STREAM_TYPE_RAW;
     sinfo[2] = CAM_FORMAT_BAYER_MIPI_RAW_10BPP_BGGR;
+    sinfo[288] = 0; // CAM_STREAMING_MODE_CONTINUOUS
+
     sinfo[3] = 1280;
     sinfo[4] = 720;
     stream->s_config.padding_info.width_padding = 32;
     stream->s_config.padding_info.height_padding = 32;
     stream->s_config.padding_info.plane_padding = 32;
 
-    printf("%s: test3 \n", __func__);
     int rc = mm_app_config_stream(test_obj, channel, stream, &stream->s_config);
     if (MM_CAMERA_OK != rc) {
         printf("%s: ERROR. config stream failed\n", __func__);
@@ -246,29 +294,14 @@ mm_camera_channel_t * mm_my_app_add_rdi_channel(mm_camera_test_obj_t *test_obj, 
         return NULL;
     }
     printf("%s: mm_app_config_stream: ok\n", __func__);
-
-    
-    // int* cap = (int*)test_obj->cap_buf.buf.buffer;
-    // int fmt_cnt = cap[1110];
-    // int w = cap[1108];
-    // int h = cap[1109];
-    // sinfo[2] = CAM_FORMAT_BAYER_MIPI_RAW_10BPP_BGGR; // 10bits for each pixel. b3:g4:r3 4pixel*10bit=40bit=5 bytes
-    // sinfo[3] = w;
-    // sinfo[4] = h;
-    // stream->s_config.padding_info.width_padding = cap[1251];
-    // stream->s_config.padding_info.height_padding = cap[1252];
-    // stream->s_config.padding_info.plane_padding = cap[1253];
-    // printf("%s: !!!!!!!!!!! p: %d %d %d\n", __func__, stream->s_config.padding_info.width_padding,stream->s_config.padding_info.height_padding,stream->s_config.padding_info.plane_padding);
-    // printf("%s: !!!!!!!!!!! wxh: %dx%d fmt:%d\n", __func__, w,h,fmt);
-
     return channel;
 }
 
-int mm_my_app_start_rdi(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb)
+int mm_my_app_start(mm_camera_test_obj_t *test_obj, uint8_t num_burst, mm_camera_buf_notify_t notify_cb)
 {
     printf("%s: begin\n", __func__);
     int rc = MM_CAMERA_OK;
-    mm_camera_channel_t *channel = mm_my_app_add_rdi_channel(test_obj, num_burst, notify_cb);
+    mm_camera_channel_t *channel = mm_my_app_add_preview_channel(test_obj, num_burst, notify_cb);
     if (NULL == channel) {
         printf("%s: ERROR. add channel failed\n", __func__);
         return -MM_CAMERA_E_GENERAL;
@@ -332,12 +365,12 @@ int main(int argc, char **argv)
 
     if (!lib_init(&handle))
     {
-        int rc = mm_my_app_start_rdi(&handle.test_obj, 0, mm_my_app_rdi_notify_cb);
+        int rc = mm_my_app_start(&handle.test_obj, 0, mm_my_app_notify_cb);
         if (!rc)
         {
             printf("%s: mm_anki_app_start_rdi: ok\n", __func__);
             //mm_camera_app_wait();
-            delay(100);
+            delay(1000);
             printf("%s: mm_camera_app_wait: done\n", __func__);
         }
     }
