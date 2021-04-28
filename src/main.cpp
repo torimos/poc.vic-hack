@@ -369,8 +369,8 @@ int main(int argc, char **argv)
         if (!rc)
         {
             printf("%s: mm_anki_app_start_rdi: ok\n", __func__);
-            //mm_camera_app_wait();
-            delay(1000);
+            mm_camera_app_wait();
+            //delay(1000);
             printf("%s: mm_camera_app_wait: done\n", __func__);
         }
     }
