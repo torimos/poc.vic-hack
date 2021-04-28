@@ -252,6 +252,7 @@ typedef void mm_jpeg_job_t;
 typedef void* mm_camera_ops_t;
 typedef void metadata_buffer_t;
 typedef metadata_buffer_t parm_buffer_t;
+typedef void mm_camera_map_unmap_ops_tbl_t;
 
 typedef struct {
     uint8_t data[21157*4];
