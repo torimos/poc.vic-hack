@@ -1,5 +1,6 @@
 # poc.vic-hack
-Poc to test my little friend "vic" features without any sdk
+POC to test my little friend "vic" features without any sdk
+Motivation - being able to write own firmware components without proprietary SDK from ...dreams
 
 # Vefified
 - LCD
