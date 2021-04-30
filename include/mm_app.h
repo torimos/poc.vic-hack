@@ -5,17 +5,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h>
+#include "cam_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 //=================================================================================================
-#define VIDEO_MAX_PLANES 8
 #define MAX_STREAM_NUM_IN_BUNDLE 4
 #define MM_CAMERA_MAX_NUM_FRAMES 24
-
-#define ION_IOC_INV_CACHES 0xC0144D01
 
 typedef enum {
     MM_CAMERA_OK,
@@ -43,216 +41,26 @@ typedef enum {
 } mm_camera_channel_type_t;
 
 typedef enum {
-    CAM_WAVELET_DENOISE_YCBCR_PLANE,
-    CAM_WAVELET_DENOISE_CBCR_ONLY,
-    CAM_WAVELET_DENOISE_STREAMLINE_YCBCR,
-    CAM_WAVELET_DENOISE_STREAMLINED_CBCR
-} cam_denoise_process_type_t;
-
-typedef enum : uint8_t {
-    /* applies to HAL 1 */
-    CAM_STREAM_TYPE_DEFAULT,       /* default stream type */
-    CAM_STREAM_TYPE_PREVIEW,       /* preview */
-    CAM_STREAM_TYPE_POSTVIEW,      /* postview */
-    CAM_STREAM_TYPE_SNAPSHOT,      /* snapshot */
-    CAM_STREAM_TYPE_VIDEO,         /* video */
-
-    /* applies to HAL 3 */
-    CAM_STREAM_TYPE_CALLBACK,      /* app requested callback */
-    CAM_STREAM_TYPE_IMPL_DEFINED, /* opaque format: could be display, video enc, ZSL YUV */
-
-    /* applies to both HAL 1 and HAL 3 */
-    CAM_STREAM_TYPE_METADATA,      /* meta data */
-    CAM_STREAM_TYPE_RAW,           /* raw dump from camif */
-    CAM_STREAM_TYPE_OFFLINE_PROC,  /* offline process */
-    CAM_STREAM_TYPE_PARM,         /* mct internal stream */
-    CAM_STREAM_TYPE_ANALYSIS,     /* analysis stream */
-    CAM_STREAM_TYPE_MAX,
-} cam_stream_type_t;
-
-typedef enum : uint8_t  {
-    CAM_STREAM_BUF_TYPE_MPLANE,  /* Multiplanar Buffer type */
-    CAM_STREAM_BUF_TYPE_USERPTR, /* User specific structure pointer*/
-    CAM_STREAM_BUF_TYPE_MAX
-} cam_stream_buf_type;
+    MM_CAMERA_SUPER_BUF_NOTIFY_BURST = 0,
+    MM_CAMERA_SUPER_BUF_NOTIFY_CONTINUOUS,
+    MM_CAMERA_SUPER_BUF_NOTIFY_MAX
+} mm_camera_super_buf_notify_mode_t;
 
 typedef enum {
-    CAM_FORMAT_JPEG = 0,
-    CAM_FORMAT_YUV_420_NV12 = 1,
-    CAM_FORMAT_YUV_420_NV21,
-    CAM_FORMAT_YUV_420_NV21_ADRENO,
-    CAM_FORMAT_YUV_420_YV12,
-    CAM_FORMAT_YUV_422_NV16,
-    CAM_FORMAT_YUV_422_NV61,
-    CAM_FORMAT_YUV_420_NV12_VENUS,
-
-    /* Please note below are the defintions for raw image.
-     * Any format other than raw image format should be declared
-     * before this line!!!!!!!!!!!!! */
-
-    /* Note: For all raw formats, each scanline needs to be 16 bytes aligned */
-
-    /* Packed YUV/YVU raw format, 16 bpp: 8 bits Y and 8 bits UV.
-     * U and V are interleaved with Y: YUYV or YVYV */
-    CAM_FORMAT_YUV_RAW_8BIT_YUYV,
-    CAM_FORMAT_YUV_RAW_8BIT_YVYU,
-    CAM_FORMAT_YUV_RAW_8BIT_UYVY,
-    CAM_FORMAT_YUV_RAW_8BIT_VYUY,
-
-    /* QCOM RAW formats where data is packed into 64bit word.
-     * 8BPP: 1 64-bit word contains 8 pixels p0 - p7, where p0 is
-     *       stored at LSB.
-     * 10BPP: 1 64-bit word contains 6 pixels p0 - p5, where most
-     *       significant 4 bits are set to 0. P0 is stored at LSB.
-     * 12BPP: 1 64-bit word contains 5 pixels p0 - p4, where most
-     *       significant 4 bits are set to 0. P0 is stored at LSB. */
-    CAM_FORMAT_BAYER_QCOM_RAW_8BPP_GBRG,
-    CAM_FORMAT_BAYER_QCOM_RAW_8BPP_GRBG,
-    CAM_FORMAT_BAYER_QCOM_RAW_8BPP_RGGB,
-    CAM_FORMAT_BAYER_QCOM_RAW_8BPP_BGGR,
-    CAM_FORMAT_BAYER_QCOM_RAW_10BPP_GBRG,
-    CAM_FORMAT_BAYER_QCOM_RAW_10BPP_GRBG,
-    CAM_FORMAT_BAYER_QCOM_RAW_10BPP_RGGB,
-    CAM_FORMAT_BAYER_QCOM_RAW_10BPP_BGGR,
-    CAM_FORMAT_BAYER_QCOM_RAW_12BPP_GBRG,
-    CAM_FORMAT_BAYER_QCOM_RAW_12BPP_GRBG,
-    CAM_FORMAT_BAYER_QCOM_RAW_12BPP_RGGB,
-    CAM_FORMAT_BAYER_QCOM_RAW_12BPP_BGGR,
-    /* MIPI RAW formats based on MIPI CSI-2 specifiction.
-     * 8BPP: Each pixel occupies one bytes, starting at LSB.
-     *       Output with of image has no restrictons.
-     * 10BPP: Four pixels are held in every 5 bytes. The output
-     *       with of image must be a multiple of 4 pixels.
-     * 12BPP: Two pixels are held in every 3 bytes. The output
-     *       width of image must be a multiple of 2 pixels. */
-    CAM_FORMAT_BAYER_MIPI_RAW_8BPP_GBRG,
-    CAM_FORMAT_BAYER_MIPI_RAW_8BPP_GRBG,
-    CAM_FORMAT_BAYER_MIPI_RAW_8BPP_RGGB,
-    CAM_FORMAT_BAYER_MIPI_RAW_8BPP_BGGR,
-    CAM_FORMAT_BAYER_MIPI_RAW_10BPP_GBRG,
-    CAM_FORMAT_BAYER_MIPI_RAW_10BPP_GRBG,
-    CAM_FORMAT_BAYER_MIPI_RAW_10BPP_RGGB,
-    CAM_FORMAT_BAYER_MIPI_RAW_10BPP_BGGR,
-    CAM_FORMAT_BAYER_MIPI_RAW_12BPP_GBRG,
-    CAM_FORMAT_BAYER_MIPI_RAW_12BPP_GRBG,
-    CAM_FORMAT_BAYER_MIPI_RAW_12BPP_RGGB,
-    CAM_FORMAT_BAYER_MIPI_RAW_12BPP_BGGR,
-    /* Ideal raw formats where image data has gone through black
-     * correction, lens rolloff, demux/channel gain, bad pixel
-     * correction, and ABF.
-     * Ideal raw formats could output any of QCOM_RAW and MIPI_RAW
-     * formats, plus plain8 8bbp, plain16 800, plain16 10bpp, and
-     * plain 16 12bpp */
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_8BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_8BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_8BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_8BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_10BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_10BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_10BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_10BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_12BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_12BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_12BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_12BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_8BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_8BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_8BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_8BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_10BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_10BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_10BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_10BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_12BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_12BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_12BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_12BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN8_8BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN8_8BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN8_8BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN8_8BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_8BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_8BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_8BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_8BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_10BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_10BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_10BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_10BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_12BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_12BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_12BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_12BPP_BGGR,
-
-    /* generic 8-bit raw */
-    CAM_FORMAT_JPEG_RAW_8BIT,
-    CAM_FORMAT_META_RAW_8BIT,
-
-    /* QCOM RAW formats where data is packed into 64bit word.
-     * 14BPP: 1 64-bit word contains 4 pixels p0 - p3, where most
-     *       significant 4 bits are set to 0. P0 is stored at LSB.
-     */
-    CAM_FORMAT_BAYER_QCOM_RAW_14BPP_GBRG,
-    CAM_FORMAT_BAYER_QCOM_RAW_14BPP_GRBG,
-    CAM_FORMAT_BAYER_QCOM_RAW_14BPP_RGGB,
-    CAM_FORMAT_BAYER_QCOM_RAW_14BPP_BGGR,
-    /* MIPI RAW formats based on MIPI CSI-2 specifiction.
-     * 14 BPPP: 1st byte: P0 [13:6]
-     *          2nd byte: P1 [13:6]
-     *          3rd byte: P2 [13:6]
-     *          4th byte: P3 [13:6]
-     *          5th byte: P0 [5:0]
-     *          7th byte: P1 [5:0]
-     *          8th byte: P2 [5:0]
-     *          9th byte: P3 [5:0]
-     */
-    CAM_FORMAT_BAYER_MIPI_RAW_14BPP_GBRG,
-    CAM_FORMAT_BAYER_MIPI_RAW_14BPP_GRBG,
-    CAM_FORMAT_BAYER_MIPI_RAW_14BPP_RGGB,
-    CAM_FORMAT_BAYER_MIPI_RAW_14BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_14BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_14BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_14BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_QCOM_14BPP_BGGR,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_14BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_14BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_14BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_MIPI_14BPP_BGGR,
-    /* 14BPP: 1st byte: P0 [8:0]
-     *        2nd byte: P0 [13:9]
-     *        3rd byte: P1 [8:0]
-     *        4th byte: P1 [13:9]
-     */
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_14BPP_GBRG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_14BPP_GRBG,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_14BPP_RGGB,
-    CAM_FORMAT_BAYER_IDEAL_RAW_PLAIN16_14BPP_BGGR,
-
-    CAM_FORMAT_YUV_444_NV24,
-    CAM_FORMAT_YUV_444_NV42,
-
-    CAM_FORMAT_MAX
-} cam_format_t;
+    MM_CAMERA_SUPER_BUF_PRIORITY_NORMAL = 0,
+    MM_CAMERA_SUPER_BUF_PRIORITY_FOCUS,
+    MM_CAMERA_SUPER_BUF_PRIORITY_EXPOSURE_BRACKETING,
+    MM_CAMERA_SUPER_BUF_PRIORITY_LOW,/* Bundled metadata frame may not match*/
+    MM_CAMERA_SUPER_BUF_PRIORITY_MAX
+} mm_camera_super_buf_priority_t;
 
 typedef enum {
-    CAM_FOCUS_MODE_OFF,
-    CAM_FOCUS_MODE_AUTO,
-    CAM_FOCUS_MODE_INFINITY,
-    CAM_FOCUS_MODE_MACRO,
-    CAM_FOCUS_MODE_FIXED,
-    CAM_FOCUS_MODE_EDOF,
-    CAM_FOCUS_MODE_CONTINOUS_VIDEO,
-    CAM_FOCUS_MODE_CONTINOUS_PICTURE,
-    CAM_FOCUS_MODE_MANUAL,
-    CAM_FOCUS_MODE_MAX
-} cam_focus_mode_type;
-
-typedef void mm_jpeg_encode_params_t;
-typedef void mm_jpeg_job_t;
-typedef void* mm_camera_ops_t;
-typedef void metadata_buffer_t;
-typedef metadata_buffer_t parm_buffer_t;
-typedef void mm_camera_map_unmap_ops_tbl_t;
+   MM_CAMERA_AF_BRACKETING = 0,
+   MM_CAMERA_AE_BRACKETING,
+   MM_CAMERA_FLASH_BRACKETING,
+   MM_CAMERA_ZOOM_1X,
+   MM_CAMERA_FRAME_CAPTURE,
+} mm_camera_advanced_capture_t;
 
 typedef struct {
     uint8_t data[21157*4];
@@ -270,41 +78,27 @@ struct fb_var_screeninfo {
     uint8_t data[40*4];
 };
 
-typedef struct{
-    uint8_t data[8*4];
-} cam_mp_len_offset_t;
-
-typedef struct {
-    uint8_t data[233*4];
-} cam_stream_info_t;
-
 typedef struct {
     uint8_t data[6*4];
 } tuningserver_t;
 
+typedef void mm_jpeg_encode_params_t;
+typedef void mm_jpeg_job_t;
+typedef void metadata_buffer_t;
+typedef metadata_buffer_t parm_buffer_t;
+typedef void mm_camera_map_unmap_ops_tbl_t;
+
+typedef int ion_user_handle_t;
+
 typedef struct {
-    uint32_t camera_handle;
-    mm_camera_ops_t *ops;
-} mm_camera_vtbl_t;
+    cam_event_type_t server_event_type;
+    uint32_t status;
+} mm_camera_event_t;
 
 typedef struct {
   uint32_t w;
   uint32_t h;
 } mm_dimension;
-
-typedef enum {
-    MM_CAMERA_SUPER_BUF_NOTIFY_BURST = 0,
-    MM_CAMERA_SUPER_BUF_NOTIFY_CONTINUOUS,
-    MM_CAMERA_SUPER_BUF_NOTIFY_MAX
-} mm_camera_super_buf_notify_mode_t;
-
-typedef enum {
-    MM_CAMERA_SUPER_BUF_PRIORITY_NORMAL = 0,
-    MM_CAMERA_SUPER_BUF_PRIORITY_FOCUS,
-    MM_CAMERA_SUPER_BUF_PRIORITY_EXPOSURE_BRACKETING,
-    MM_CAMERA_SUPER_BUF_PRIORITY_LOW,/* Bundled metadata frame may not match*/
-    MM_CAMERA_SUPER_BUF_PRIORITY_MAX
-} mm_camera_super_buf_priority_t;
 
 typedef struct {
     mm_camera_super_buf_notify_mode_t notify_mode;
@@ -334,32 +128,11 @@ typedef struct {
 } mm_jpeg_ops_t;
 
 typedef struct {
-  void *ptr;
-  void* ptr_jpeg;
-
-  uint8_t (*get_num_of_cameras) ();
-  mm_camera_vtbl_t *(*mm_camera_open) (uint8_t camera_idx);
-  uint32_t (*jpeg_open) (mm_jpeg_ops_t *ops, mm_dimension picture_size);
-
-} hal_interface_lib_t;
-
-typedef struct {
-    uint8_t num_cameras;
-    hal_interface_lib_t hal_lib;
-} mm_camera_app_t;
-
-typedef struct {
     uint16_t user_input_display_width;
     uint16_t user_input_display_height;
 } USER_INPUT_DISPLAY_T;
 
-typedef struct {
-    uint8_t denoise_enable;
-    cam_denoise_process_type_t process_plates;
-} cam_denoise_param_t;
-
 struct v4l2_plane {
-    // uint8_t data[15*4];
     uint32_t bytesused;
     uint32_t length;
     uint32_t userptr;
@@ -392,15 +165,7 @@ typedef struct {
     uint32_t ch_id;
     uint32_t num_bufs;
     mm_camera_buf_def_t* bufs[MAX_STREAM_NUM_IN_BUNDLE];
-//     uint8_t data[7*4];
 } mm_camera_super_buf_t;
-
-typedef void (*mm_camera_buf_notify_t) (mm_camera_super_buf_t *bufs,
-                                        void *user_data);
-
-typedef void (*prev_callback) (mm_camera_buf_def_t *preview_frame);
-
-typedef int ion_user_handle_t;
 
 typedef struct {
     int                     fd;
@@ -414,18 +179,6 @@ typedef struct {
     mm_camera_buf_def_t buf;
     mm_camera_app_meminfo_t mem_info;
 } mm_camera_app_buf_t;
-
-typedef struct {
-    uint32_t width_padding;
-    uint32_t height_padding;
-    uint32_t plane_padding;
-} cam_padding_info_t;
-
-typedef struct {
-    uint32_t num_planes;
-    cam_mp_len_offset_t mp[VIDEO_MAX_PLANES];
-    uint32_t frame_len;
-} cam_frame_len_offset_t;
 
 typedef struct {
   void *user_data;
@@ -442,6 +195,7 @@ typedef struct {
 } mm_camera_stream_mem_vtbl_t;
 
 typedef void (*mm_camera_buf_notify_t) (mm_camera_super_buf_t *bufs, void *user_data);
+typedef void (*mm_camera_event_notify_t)(uint32_t camera_handle, mm_camera_event_t *evt, void *user_data);
 
 typedef struct {
     cam_stream_info_t *stream_info;
@@ -462,10 +216,425 @@ typedef struct {
 } mm_camera_stream_t;
 
 typedef struct {
+    /** query_capability: fucntion definition for querying static
+     *                    camera capabilities
+     *    @camera_handle : camer handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     *  Note: would assume cam_capability_t is already mapped
+     **/
+    int32_t (*query_capability) (uint32_t camera_handle);
+
+    /** register_event_notify: fucntion definition for registering
+     *                         for event notification
+     *    @camera_handle : camer handler
+     *    @evt_cb : callback for event notify
+     *    @user_data : user data poiner
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*register_event_notify) (uint32_t camera_handle,
+                                      mm_camera_event_notify_t evt_cb,
+                                      void *user_data);
+
+    /** close_camera: fucntion definition for closing a camera
+     *    @camera_handle : camer handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*close_camera) (uint32_t camera_handle);
+
+    /** map_buf: fucntion definition for mapping a camera buffer
+     *           via domain socket
+     *    @camera_handle : camer handler
+     *    @buf_type : type of mapping buffers, can be value of
+     *                CAM_MAPPING_BUF_TYPE_CAPABILITY
+     *                CAM_MAPPING_BUF_TYPE_SETPARM_BUF
+     *                CAM_MAPPING_BUF_TYPE_GETPARM_BUF
+     *    @fd : file descriptor of the stream buffer
+     *    @size :  size of the stream buffer
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*map_buf) (uint32_t camera_handle,
+                        uint8_t buf_type,
+                        int fd,
+                        size_t size);
+
+    /** unmap_buf: fucntion definition for unmapping a camera buffer
+     *           via domain socket
+     *    @camera_handle : camer handler
+     *    @buf_type : type of mapping buffers, can be value of
+     *                CAM_MAPPING_BUF_TYPE_CAPABILITY
+     *                CAM_MAPPING_BUF_TYPE_SETPARM_BUF
+     *                CAM_MAPPING_BUF_TYPE_GETPARM_BUF
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*unmap_buf) (uint32_t camera_handle,
+                          uint8_t buf_type);
+
+    /** set_parms: fucntion definition for setting camera
+     *             based parameters to server
+     *    @camera_handle : camer handler
+     *    @parms : batch for parameters to be set, stored in
+     *               parm_buffer_t
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     *  Note: would assume parm_buffer_t is already mapped, and
+     *       according parameter entries to be set are filled in the
+     *       buf before this call
+     **/
+    int32_t (*set_parms) (uint32_t camera_handle,
+                          parm_buffer_t *parms);
+
+    /** get_parms: fucntion definition for querying camera
+     *             based parameters from server
+     *    @camera_handle : camer handler
+     *    @parms : batch for parameters to be queried, stored in
+     *               parm_buffer_t
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     *  Note: would assume parm_buffer_t is already mapped, and
+     *       according parameter entries to be queried are filled in
+     *       the buf before this call
+     **/
+    int32_t (*get_parms) (uint32_t camera_handle,
+                          parm_buffer_t *parms);
+
+    /** do_auto_focus: fucntion definition for performing auto focus
+     *    @camera_handle : camer handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     *  Note: if this call success, we will always assume there will
+     *        be an auto_focus event following up.
+     **/
+    int32_t (*do_auto_focus) (uint32_t camera_handle);
+
+    /** cancel_auto_focus: fucntion definition for cancelling
+     *                     previous auto focus request
+     *    @camera_handle : camer handler
+    *  Return value: 0 -- success
+    *                -1 -- failure
+     **/
+    int32_t (*cancel_auto_focus) (uint32_t camera_handle);
+
+    /** prepare_snapshot: fucntion definition for preparing hardware
+     *                    for snapshot.
+     *    @camera_handle : camer handler
+     *    @do_af_flag    : flag indicating if AF needs to be done
+     *                     0 -- no AF needed
+     *                     1 -- AF needed
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*prepare_snapshot) (uint32_t camera_handle,
+                                 int32_t do_af_flag);
+
+    /** start_zsl_snapshot: function definition for starting
+     *                    zsl snapshot.
+     *    @camera_handle : camer handler
+     *    @ch_id         : channel id
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*start_zsl_snapshot) (uint32_t camera_handle, uint32_t ch_id);
+
+    /** stop_zsl_snapshot: function definition for stopping
+     *                    zsl snapshot.
+     *    @camera_handle : camer handler
+     *    @ch_id         : channel id
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*stop_zsl_snapshot) (uint32_t camera_handle, uint32_t ch_id);
+
+    /** add_channel: fucntion definition for adding a channel
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @attr : pointer to channel attribute structure
+     *    @channel_cb : callbak to handle bundled super buffer
+     *    @userdata : user data pointer
+     *  Return value: channel id, zero is invalid ch_id
+     * Note: attr, channel_cb, and userdata can be NULL if no
+     *       superbufCB is needed
+     **/
+    uint32_t (*add_channel) (uint32_t camera_handle,
+                             mm_camera_channel_attr_t *attr,
+                             mm_camera_buf_notify_t channel_cb,
+                             void *userdata);
+
+    /** delete_channel: fucntion definition for deleting a channel
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*delete_channel) (uint32_t camera_handle,
+                               uint32_t ch_id);
+
+    /** get_bundle_info: function definition for querying bundle
+     *  info of the channel
+     *    @camera_handle : camera handler
+     *    @ch_id         : channel handler
+     *    @bundle_info   : bundle info to be filled in
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*get_bundle_info) (uint32_t camera_handle,
+                                uint32_t ch_id,
+                                cam_bundle_config_t *bundle_info);
+
+    /** add_stream: fucntion definition for adding a stream
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *  Return value: stream_id. zero is invalid stream_id
+     **/
+    uint32_t (*add_stream) (uint32_t camera_handle,
+                            uint32_t ch_id);
+
+    /** delete_stream: fucntion definition for deleting a stream
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*delete_stream) (uint32_t camera_handle,
+                              uint32_t ch_id,
+                              uint32_t stream_id);
+
+    /** link_stream: function definition for linking a stream
+     *    @camera_handle : camera handle
+     *    @ch_id : channel handle from which the stream originates
+     *    @stream_id : stream handle
+     *    @linked_ch_id: channel handle in which the stream will be linked
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*link_stream) (uint32_t camera_handle,
+          uint32_t ch_id,
+          uint32_t stream_id,
+          uint32_t linked_ch_id);
+
+    /** config_stream: fucntion definition for configuring a stream
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *    @confid : pointer to a stream configuration structure
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*config_stream) (uint32_t camera_handle,
+                              uint32_t ch_id,
+                              uint32_t stream_id,
+                              mm_camera_stream_config_t *config);
+
+    /** map_stream_buf: fucntion definition for mapping
+     *                 stream buffer via domain socket
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *    @buf_type : type of mapping buffers, can be value of
+     *             CAM_MAPPING_BUF_TYPE_STREAM_BUF
+     *             CAM_MAPPING_BUF_TYPE_STREAM_INFO
+     *             CAM_MAPPING_BUF_TYPE_OFFLINE_INPUT_BUF
+     *    @buf_idx : buffer index within the stream buffers
+     *    @plane_idx : plane index. If all planes share the same fd,
+     *               plane_idx = -1; otherwise, plean_idx is the
+     *               index to plane (0..num_of_planes)
+     *    @fd : file descriptor of the stream buffer
+     *    @size :  size of the stream buffer
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*map_stream_buf) (uint32_t camera_handle,
+                               uint32_t ch_id,
+                               uint32_t stream_id,
+                               uint8_t buf_type,
+                               uint32_t buf_idx,
+                               int32_t plane_idx,
+                               int fd,
+                               size_t size);
+
+    /** unmap_stream_buf: fucntion definition for unmapping
+     *                 stream buffer via domain socket
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *    @buf_type : type of mapping buffers, can be value of
+     *             CAM_MAPPING_BUF_TYPE_STREAM_BUF
+     *             CAM_MAPPING_BUF_TYPE_STREAM_INFO
+     *             CAM_MAPPING_BUF_TYPE_OFFLINE_INPUT_BUF
+     *    @buf_idx : buffer index within the stream buffers
+     *    @plane_idx : plane index. If all planes share the same fd,
+     *               plane_idx = -1; otherwise, plean_idx is the
+     *               index to plane (0..num_of_planes)
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*unmap_stream_buf) (uint32_t camera_handle,
+                                 uint32_t ch_id,
+                                 uint32_t stream_id,
+                                 uint8_t buf_type,
+                                 uint32_t buf_idx,
+                                 int32_t plane_idx);
+
+    /** set_stream_parms: fucntion definition for setting stream
+     *                    specific parameters to server
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *    @parms : batch for parameters to be set
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     *  Note: would assume parm buffer is already mapped, and
+     *       according parameter entries to be set are filled in the
+     *       buf before this call
+     **/
+    int32_t (*set_stream_parms) (uint32_t camera_handle,
+                                 uint32_t ch_id,
+                                 uint32_t s_id,
+                                 cam_stream_parm_buffer_t *parms);
+
+    /** get_stream_parms: fucntion definition for querying stream
+     *                    specific parameters from server
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *    @parms : batch for parameters to be queried
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     *  Note: would assume parm buffer is already mapped, and
+     *       according parameter entries to be queried are filled in
+     *       the buf before this call
+     **/
+    int32_t (*get_stream_parms) (uint32_t camera_handle,
+                                 uint32_t ch_id,
+                                 uint32_t s_id,
+                                 cam_stream_parm_buffer_t *parms);
+
+    /** start_channel: fucntion definition for starting a channel
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     * This call will start all streams belongs to the channel
+     **/
+    int32_t (*start_channel) (uint32_t camera_handle,
+                              uint32_t ch_id);
+
+    /** stop_channel: fucntion definition for stopping a channel
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     * This call will stop all streams belongs to the channel
+     **/
+    int32_t (*stop_channel) (uint32_t camera_handle,
+                             uint32_t ch_id);
+
+    /** qbuf: fucntion definition for queuing a frame buffer back to
+     *        kernel for reuse
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @buf : a frame buffer to be queued back to kernel
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*qbuf) (uint32_t camera_handle,
+                     uint32_t ch_id,
+                     mm_camera_buf_def_t *buf);
+
+    /** get_queued_buf_count: fucntion definition for querying queued buf count
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @stream_id : stream handler
+     *  Return value: queued buf count
+     **/
+    int32_t (*get_queued_buf_count) (uint32_t camera_handle,
+            uint32_t ch_id,
+            uint32_t stream_id);
+
+    /** request_super_buf: fucntion definition for requesting frames
+     *                     from superbuf queue in burst mode
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @num_buf_requested : number of super buffers requested
+     *    @num_retro_buf_requested : number of retro buffers requested
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*request_super_buf) (uint32_t camera_handle,
+                                  uint32_t ch_id,
+                                  uint32_t num_buf_requested,
+                                  uint32_t num_retro_buf_requested);
+
+    /** cancel_super_buf_request: fucntion definition for canceling
+     *                     frames dispatched from superbuf queue in
+     *                     burst mode
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*cancel_super_buf_request) (uint32_t camera_handle,
+                                         uint32_t ch_id);
+
+    /** flush_super_buf_queue: function definition for flushing out
+     *                     all frames in the superbuf queue up to frame_idx,
+     *                     even if frames with frame_idx come in later than
+     *                     this call.
+     *    @camera_handle : camer handler
+     *    @ch_id : channel handler
+     *    @frame_idx : frame index up until which all superbufs are flushed
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*flush_super_buf_queue) (uint32_t camera_handle,
+                                      uint32_t ch_id, uint32_t frame_idx);
+
+    /** configure_notify_mode: function definition for configuring the
+     *                         notification mode of channel
+     *    @camera_handle : camera handler
+     *    @ch_id : channel handler
+     *    @notify_mode : notification mode
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*configure_notify_mode) (uint32_t camera_handle,
+                                      uint32_t ch_id,
+                                      mm_camera_super_buf_notify_mode_t notify_mode);
+
+   /** process_advanced_capture: function definition for start/stop advanced capture
+     *                    for snapshot.
+     *    @camera_handle : camera handle
+     *    @ch_id : channel handler
+     *    @type :  advanced capture type.
+     *    @trigger    : flag indicating if advanced capture needs to be done
+     *                     0 -- stop advanced capture
+     *                     1 -- start advanced capture
+     *    @in_value: Input value. Configaration
+     *  Return value: 0 -- success
+     *                -1 -- failure
+     **/
+    int32_t (*process_advanced_capture) (uint32_t camera_handle,
+             uint32_t ch_id, mm_camera_advanced_capture_t type,
+             int8_t start_flag, void *in_value);
+} mm_camera_ops_t;
+
+typedef struct {
+    uint32_t camera_handle;
+    mm_camera_ops_t *ops;
+} mm_camera_vtbl_t;
+
+typedef struct {
     uint32_t ch_id;
     uint8_t num_streams;
     mm_camera_stream_t streams[MAX_STREAM_NUM_IN_BUNDLE];
 } mm_camera_channel_t;
+
+typedef void (*prev_callback) (mm_camera_buf_def_t *preview_frame);
 
 typedef struct {
     mm_camera_vtbl_t *cam;
@@ -515,6 +684,21 @@ typedef struct {
     int32_t stream_width, stream_height;
     cam_focus_mode_type af_mode;
 } mm_camera_lib_params;
+
+typedef struct {
+  void *ptr;
+  void *ptr_jpeg;
+
+  uint8_t (*get_num_of_cameras) ();
+  mm_camera_vtbl_t *(*mm_camera_open) (uint8_t camera_idx);
+  uint32_t (*jpeg_open) (mm_jpeg_ops_t *ops, mm_dimension picture_size);
+
+} hal_interface_lib_t;
+
+typedef struct {
+    uint8_t num_cameras;
+    hal_interface_lib_t hal_lib;
+} mm_camera_app_t;
 
 typedef struct {
     mm_camera_app_t app_ctx;
