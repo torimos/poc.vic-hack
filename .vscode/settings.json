@@ -15,6 +15,7 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "xstddef": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "istream": "cpp"
     }
 }
