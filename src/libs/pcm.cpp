@@ -26,7 +26,7 @@ long pcm_lib_writebuf(pcm_lib_t* lib, uint8_t *buf, long len, size_t *frames)
     long r,a;
     int channels = 1;
     snd_pcm_format_t format = SND_PCM_FORMAT_U8;
-    int frame_bytes = (lib->format_width(format) / 8) * channels;
+    long frame_bytes = (lib->format_width(format) / 8) * channels;
     printf("%s: frame_bytes = %li\n", __func__, frame_bytes);
     while (len > 0) {
         r = lib->writei(lib->handle, (char*)buf, len);

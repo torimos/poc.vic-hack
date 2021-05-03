@@ -8,7 +8,7 @@ void pcm_demo()
 {
     pcm_lib_t lib;
     int err;
-    unsigned int i;
+    uint32_t i;
     snd_pcm_sframes_t frames;
 
     pcm_lib_init(&lib);

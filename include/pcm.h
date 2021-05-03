@@ -198,10 +198,10 @@ typedef struct
     int (*set_params)(snd_pcm_t *pcm,
                         snd_pcm_format_t format,
                         snd_pcm_access_t access,
-                        unsigned int channels,
-                        unsigned int rate,
+                        uint32_t channels,
+                        uint32_t rate,
                         int soft_resample,
-                        unsigned int latency);
+                        uint32_t latency);
     snd_pcm_sframes_t (*writei)(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size);
     int (*drain)(snd_pcm_t *pcm);
     int (*close)(snd_pcm_t *pcm);

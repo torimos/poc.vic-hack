@@ -3,7 +3,7 @@
 #include "imu.h"
 
 
-int imu_spi_read(int fd, unsigned char* buff, unsigned int tx_len, unsigned int rx_len)
+int imu_spi_read(int fd, unsigned char* buff, uint32_t tx_len, uint32_t rx_len)
 {
     struct spi_ioc_transfer xfer[2];
     memset(xfer, 0, sizeof xfer);
@@ -15,7 +15,7 @@ int imu_spi_read(int fd, unsigned char* buff, unsigned int tx_len, unsigned int 
     return ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
 }
 
-int imu_spi_write(int fd, unsigned char* buff, unsigned int len)
+int imu_spi_write(int fd, unsigned char* buff, uint32_t len)
 {
 	struct spi_ioc_transfer xfer[1];
     memset(xfer, 0, sizeof xfer);

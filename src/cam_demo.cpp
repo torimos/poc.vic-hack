@@ -106,11 +106,11 @@ void mm_app_dump_frame2(mm_camera_buf_def_t *frame,
     }
 }
 
-unsigned short rgb888_rgb565(unsigned int sourceColor)
+unsigned short rgb888_rgb565(uint32_t sourceColor)
 {
-	unsigned int red = (sourceColor & 0x00FF0000) >> 16;
-	unsigned int green = (sourceColor & 0x0000FF00) >> 8;
-	unsigned int blue =  sourceColor & 0x000000FF;
+	uint32_t red = (sourceColor & 0x00FF0000) >> 16;
+	uint32_t green = (sourceColor & 0x0000FF00) >> 8;
+	uint32_t blue =  sourceColor & 0x000000FF;
 	return (red >> 3 << 11) + (green >> 2 << 5) + (blue >> 3);
 }
 
