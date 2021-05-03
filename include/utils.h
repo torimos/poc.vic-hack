@@ -27,6 +27,7 @@ struct GPIO
 };
 
 void delay(uint ms);
+void delay_us(ulong us);
 int64_t get_time();
 
 void gpioInit(GPIO* gpio, int pin, int mode, int state, bool is_x = false);

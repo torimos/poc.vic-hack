@@ -81,8 +81,6 @@ void gpioClose(GPIO* gpio)
         close(gpio->vd);
 }
 
-
-
 int clz(uint32_t x)
 {
     static const char debruijn32[32] = {
@@ -98,7 +96,7 @@ int clz(uint32_t x)
     return debruijn32[x*0x076be629>>27];
 }
 
-int nsec2msec(long nsec, unsigned int divider)
+int nsec2msec(long nsec, uint32_t divider)
 {
     signed int sign = nsec ^ divider;
     if ( (divider & 0x80000000) != 0 )
@@ -110,7 +108,7 @@ int nsec2msec(long nsec, unsigned int divider)
     }
     else
     {
-        unsigned int t = nsec;
+        uint32_t t = nsec;
         if ( nsec < 0 )
             t = -nsec;
         if ( t <= divider )
@@ -123,8 +121,8 @@ int nsec2msec(long nsec, unsigned int divider)
         else if ( (divider & (divider - 1)) != 0 )
         {
             char bit = clz(divider) - clz(t);
-            unsigned int v5 = divider << bit;
-            unsigned int v6 = 1 << bit;
+            uint32_t v5 = divider << bit;
+            uint32_t v6 = 1 << bit;
             nsec = 0;
             while ( 1 )
             {
@@ -185,4 +183,9 @@ int64_t get_time()
 void delay(uint ms)
 {
     usleep(ms * 1000);
+}
+
+void delay_us(ulong us)
+{
+    usleep(us);
 }
