@@ -9,7 +9,7 @@ TARGET = vic-hack
 CC	 = $(PREFIX)gcc
 
 CCFLAGS +=
-LDFLAGS += -ldl
+LDFLAGS += -lstdc++ -ldl 
 
 OBJS = $(patsubst $(SRC_DIR)/%, %.o, $(shell find $(SRC_DIR)/ -type f -name '*.*'))
 DIRS = $(filter-out $(HOME),$(sort $(dir $(OBJS))))
