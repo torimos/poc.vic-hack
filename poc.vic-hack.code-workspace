@@ -21,7 +21,9 @@
 			"utility": "cpp",
 			"xstddef": "cpp",
 			"xtr1common": "cpp",
-			"istream": "cpp"
+			"istream": "cpp",
+			"xstring": "cpp",
+			"xutility": "cpp"
 		}
 	}
 }

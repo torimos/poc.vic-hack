@@ -35,6 +35,9 @@ void gpioDirection(GPIO* gpio, int mode);
 void gpioSet(GPIO* gpio, int state);
 void gpioClose(GPIO* gpio);
 
+uint32_t get_CRC32(uint8_t *data, int16_t len);
+
+void debug_buffer(uint8_t* buffer, int buffer_size);
 
 #ifdef __cplusplus
 }
