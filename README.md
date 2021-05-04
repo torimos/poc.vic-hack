@@ -4,7 +4,7 @@ POC to test my little friend "vector" features without any sdk
 Ultimate goal - being able to write own firmware components without proprietary SDK from DD
 
 # Prerequisites
-All /anki/bin/vic-* amd mm-anki-camera deamons installed on vector needs to be removed or replaced by dummy executables to eliminate any conflicts with custom apps
+All /anki/bin/vic-* amd mm-anki-camera demons installed on vector needs to be removed or replaced by dummy executables to eliminate any conflicts with custom apps
 
 # Verified
 - LCD
