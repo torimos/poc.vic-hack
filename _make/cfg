@@ -1,0 +1,3 @@
+echo Copy config file to vector
+cd $(pwd)/_make
+./cpy ~/p/vector/_config/server_config.json root@10.0.1.40:/anki/data/assets/cozmo_resources/config/server_config.json

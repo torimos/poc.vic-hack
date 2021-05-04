@@ -1,0 +1,6 @@
+pushd .
+sudo docker rmi armbuilder
+cd ~/p/vector/$1
+make docker-builder
+sudo docker system prune -f
+popd

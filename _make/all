@@ -1,0 +1,6 @@
+cd $(pwd)/_make
+./mnt
+./mk vector-cloud vic-cloud
+./up vector-cloud vic-cloud cloud
+./up vector-cloud vic-gateway net
+./cfg

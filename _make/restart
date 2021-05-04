@@ -1,0 +1,3 @@
+~/_make/cmd systemctl daemon-reload
+~/_make/cmd systemctl restart vic-cloud
+~/_make/cmd systemctl restart vic-gateway

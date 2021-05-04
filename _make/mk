@@ -1,0 +1,9 @@
+sudo rm -rf ~/vector/src/$1
+sudo mkdir ~/vector
+sudo mkdir ~/vector/src
+sudo mkdir ~/vector/src/$1
+sudo cp -r ~/p/vector/$1 ~/vector/src
+cd ~/vector/src/$1
+make $2
+sudo cp -r ~/vector/src/$1/build/* ~/p/vector/$1/build/
+cd ~/_make

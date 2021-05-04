@@ -1,0 +1,2 @@
+~/_make/mk $1
+~/_make/up $1 $2 cloud

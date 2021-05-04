@@ -1,0 +1,2 @@
+echo Mount vector root fs
+sudo ssh -i ~/p/vector/_ssh_keys/id_rsa_Vector-D8J3 root@vector.local mount -o remount,rw /

@@ -1,0 +1,3 @@
+~/_make/cpy ~/p/vector/$1/build/$2 root@10.0.1.40:/hack
+~/_make/cmd chmod +x /hack/$2
+~/_make/cmd chown root:root /hack/$2
